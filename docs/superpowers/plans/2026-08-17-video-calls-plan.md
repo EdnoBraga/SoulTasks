@@ -17,6 +17,9 @@
 - Camera, microphone, and screen permissions are requested only on user action.
 - TURN credentials remain in Supabase secrets or a server-side broker.
 - The original SoulFork website is not modified.
+- Recorded meetings require an explicit “OK” confirmation before entry.
+- Meeting output is a concise speaker-attributed summary, not a verbatim transcript.
+- Minutes are viewable in the dashboard and exportable as PDF or HTML.
 
 ## File Map
 
@@ -25,11 +28,16 @@
 - Create `src/collaboration/webrtcPeer.ts`: one peer connection lifecycle and track management.
 - Create `src/collaboration/callRoom.ts`: room presence, signaling, participant cap, and teardown.
 - Create `src/components/CallRoom.tsx`: call overlay, participant tiles, controls, and screen sharing.
+- Create `src/components/MeetingConsent.tsx`: mandatory recording/transcription notice before entry.
+- Create `src/components/MeetingMinutes.tsx`: summarized speaker-attributed minutes with PDF/HTML export.
+- Create `src/collaboration/meetingMinutes.ts`: transcription finalization and summary generation contract.
 - Create `src/collaboration/webrtcPeer.test.ts`: peer lifecycle tests with mocked browser APIs.
 - Create `src/collaboration/callRoom.test.ts`: signaling and room cleanup tests.
 - Create `src/components/CallRoom.test.tsx`: permissions, controls, and join/leave UI tests.
 - Modify `src/App.tsx`: active-room banner and call overlay.
 - Modify `src/styles/global.css`: call grid, active room banner, and permission/error states.
+- Modify `src/App.tsx`: meeting-minutes navigation and meeting history.
+- Modify `src/styles/global.css`: consent dialog, minutes list, minutes viewer, and export actions.
 - Modify `docs/PRIVATE-WORKSPACE-SETUP.md`: TURN setup and browser permission checklist.
 
 ## Task 1: Add room and participant schema
@@ -183,7 +191,53 @@ git add src/components/CallRoom.tsx src/components/CallRoom.test.tsx src/App.tsx
 git commit -m "feat: add video call and screen sharing UI"
 ```
 
-## Task 5: Configure TURN and verify production media
+## Task 5: Capture consent and generate concise meeting minutes
+
+**Files:**
+- Create: `supabase/migrations/20260818110000_meeting_minutes.sql`
+- Create: `src/components/MeetingConsent.tsx`
+- Create: `src/components/MeetingMinutes.tsx`
+- Create: `src/collaboration/meetingMinutes.ts`
+- Test: `src/components/MeetingMinutes.test.tsx`
+- Modify: `src/App.tsx`
+- Modify: `src/styles/global.css`
+
+- [ ] **Step 1: Write failing consent and summary tests**
+
+Cover blocked entry without confirmation, confirmation recorded per meeting,
+speaker-attributed summary sections, omission of verbatim transcript output,
+and PDF/HTML export actions.
+
+- [ ] **Step 2: Add consent gate**
+
+Show the recording/transcription notice before joining. Enable entry only after
+the user selects “OK”; do not request or capture media before confirmation.
+
+- [ ] **Step 3: Persist meeting metadata and minutes**
+
+Store the meeting, participants’ confirmations, summarized content, speaker
+labels, and export metadata with RLS for workspace members. Keep raw media out
+of the database and do not expose server-side credentials in the browser.
+
+- [ ] **Step 4: Build the minutes viewer and exports**
+
+Add the “Atas de reunião” view beside Quadro, Atividade, and Calendário. Render
+summary, decisions, responsible people, and next steps. Generate a print-safe
+HTML document and a PDF export without requiring users to read a full transcript.
+
+- [ ] **Step 5: Run focused and browser tests**
+
+Verify consent, summarized speaker attribution for Braga, Pallus, and Kayo,
+history loading, and both export formats with mocked transcription results.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add supabase/migrations src/components src/collaboration src/App.tsx src/styles/global.css
+git commit -m "feat: add consented summarized meeting minutes"
+```
+
+## Task 6: Configure TURN and verify production media
 
 **Files:**
 - Modify: `docs/PRIVATE-WORKSPACE-SETUP.md`

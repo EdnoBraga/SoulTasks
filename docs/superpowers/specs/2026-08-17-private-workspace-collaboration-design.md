@@ -49,6 +49,18 @@ O remetente dos convites será `faleconosco@soulfork.com.br`.
 - usar WebRTC para mídia e Supabase Realtime para sinalização;
 - prever servidor TURN para redes que não permitem conexão direta.
 
+### Etapa 3 — atas de reunião
+
+- antes de entrar em uma reunião com gravação, exibir um aviso obrigatório e
+  exigir a confirmação “OK”;
+- transcrever o áudio durante a reunião somente após essa confirmação;
+- gerar uma ata resumida, sem reproduzir palavra por palavra;
+- identificar, nos trechos relevantes, se a fala foi de Braga, Pallus ou Kayo;
+- destacar decisões, pontos principais, responsáveis e encaminhamentos;
+- disponibilizar as atas em uma seção própria do dashboard, ao lado de
+  Quadro, Atividade e Calendário;
+- permitir visualizar a ata no dashboard e exportar em PDF ou HTML.
+
 ## Arquitetura proposta
 
 ### Autenticação e autorização
@@ -150,6 +162,16 @@ versão. Um servidor TURN será configurado antes do uso em produção para redu
 falhas em redes corporativas, VPNs e CGNAT. A permissão do navegador para
 câmera, microfone e tela será solicitada somente ao entrar na chamada.
 
+### Transcrição e ata da reunião
+
+A sala exibirá o aviso de gravação/transcrição antes da entrada. A confirmação
+será registrada junto à sessão da reunião e a captura só começará depois dela.
+O áudio será processado para produzir uma transcrição resumida com atribuição
+de falas por participante. O produto não exibirá uma transcrição integral por
+padrão; a ata será organizada em resumo, decisões, responsáveis e próximos
+passos. O resultado ficará associado à reunião e poderá ser consultado ou
+exportado como PDF e HTML.
+
 ## Experiência e textos
 
 O produto usará linguagem direta e operacional:
@@ -206,6 +228,13 @@ segredos de conexão. Esses valores ficarão somente em secrets do Supabase.
 - encerrar a sala libera os participantes;
 - falha de permissão ou conexão mostra recuperação clara;
 - nenhum stream é persistido no banco.
+
+### Etapa 3
+
+- participante precisa confirmar o aviso antes de entrar na reunião gravada;
+- ata identifica o autor dos trechos relevantes sem gerar texto literal
+  integral;
+- ata aparece no dashboard e pode ser exportada em PDF e HTML.
 
 ## Decisões e limites
 
