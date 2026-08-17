@@ -20,7 +20,7 @@
 - Invitation sender: `faleconosco@soulfork.com.br`.
 - Preserve the existing deployment workflow and the original `soulfork.com.br` site.
 - Card assignees are the fixed internal members `Braga`, `Pallus`, and `Kayo`, with multi-select.
-- Voice transcription is committed to text only after the user stops recording; audio is never persisted.
+- Voice transcription is shown live while the user speaks, finalized on stop, and audio is never persisted.
 - The board must expose horizontal navigation and 80%/90%/100% zoom for four or more columns.
 
 ## File Map

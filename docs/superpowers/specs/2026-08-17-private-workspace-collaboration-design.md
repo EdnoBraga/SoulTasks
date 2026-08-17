@@ -29,8 +29,8 @@ O remetente dos convites será `faleconosco@soulfork.com.br`.
 - os responsáveis disponíveis serão `Braga`, `Pallus` e `Kayo`;
 - cada card poderá ter um, dois ou os três responsáveis selecionados;
 - Inbox, título, descrição, checklist e comentários terão ação de microfone;
-- a fala será transcrita em português brasileiro somente depois de “Parar
-  gravação”, e o texto ficará editável antes de ser salvo;
+- a fala será transcrita em português brasileiro em tempo real enquanto a
+  pessoa fala, e o texto ficará editável antes de ser salvo;
 - nenhum áudio será armazenado, e a digitação continuará disponível como
   alternativa caso o navegador não ofereça reconhecimento de voz;
 - o quadro terá rolagem horizontal visível, suporte a arrastar no espaço vazio
@@ -119,11 +119,12 @@ Interface planejada:
 ### Criação de tarefas por voz e responsáveis
 
 O modal de criação/edição de card reutilizará um controle de voz contextual
-para os campos de texto. Ao iniciar, o navegador solicitará o microfone; ao
-parar, o resultado reconhecido será inserido no campo ativo e poderá ser
-revisado antes do envio. O controle exibirá estados “Gravando”, “Processando”
-e “Transcrição pronta”, com mensagem de recuperação para permissão negada,
-idioma indisponível ou navegador sem suporte.
+para os campos de texto. Ao iniciar, o navegador solicitará o microfone e o
+texto parcial aparecerá enquanto a pessoa fala; ao parar, o resultado final
+será consolidado no campo ativo e poderá ser revisado antes do envio. O
+controle exibirá estados “Gravando”, “Processando” e “Transcrição pronta”, com
+mensagem de recuperação para permissão negada, idioma indisponível ou
+navegador sem suporte.
 
 O seletor “Responsáveis” será multiseleção com busca e opções fixas Braga,
 Pallus e Kayo. Os responsáveis aparecerão no card e poderão ser alterados sem
@@ -190,8 +191,8 @@ segredos de conexão. Esses valores ficarão somente em secrets do Supabase.
 - mensagem privada chega somente aos dois participantes;
 - RLS impede leitura direta por usuário externo.
 - card permite selecionar Braga, Pallus, Kayo, individualmente ou em conjunto;
-- Inbox e modal de card transcrevem a fala após “Parar gravação” e permitem
-  editar o texto antes de salvar;
+- Inbox e modal de card transcrevem a fala em tempo real e permitem editar o
+  texto antes de salvar;
 - quatro colunas podem ser alcançadas por rolagem, arraste e toque;
 - zoom 80%, 90% e 100% mantém cards e controles utilizáveis.
 
