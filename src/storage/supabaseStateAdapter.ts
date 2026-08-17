@@ -61,14 +61,14 @@ export async function refreshSupabaseSession(session: SupabaseSession, fetcher: 
   return await response.json() as SupabaseSession;
 }
 
-export function createSupabaseStateAdapter(session: SupabaseSession, fetcher: Fetcher = fetch, configured?: SupabaseConfig) {
+export function createSupabaseStateAdapter(session: SupabaseSession, workspaceId: string, fetcher: Fetcher = fetch, configured?: SupabaseConfig) {
   const config = configured ?? getSupabaseConfig();
   if (!config) throw new Error('Supabase não configurado.');
   const headers = { apikey: config.key, Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' };
   const endpoint = `${config.url}/rest/v1/board_snapshots`;
   return {
     async load(): Promise<BoardState | null> {
-      const response = await fetcher(`${endpoint}?select=state&user_id=eq.${encodeURIComponent(session.user.id)}&limit=1`, { headers });
+      const response = await fetcher(`${endpoint}?select=state&workspace_id=eq.${encodeURIComponent(workspaceId)}&limit=1`, { headers });
       if (!response.ok) throw new Error(`Falha ao carregar o quadro (${response.status}).`);
       const rows = await response.json() as { state: BoardState }[];
       return rows[0]?.state ?? null;
@@ -76,7 +76,7 @@ export function createSupabaseStateAdapter(session: SupabaseSession, fetcher: Fe
     async save(state: BoardState) {
       const response = await fetcher(endpoint, {
         method: 'POST', headers: { ...headers, Prefer: 'resolution=merge-duplicates,return=minimal' },
-        body: JSON.stringify({ user_id: session.user.id, state, updated_at: new Date().toISOString() }),
+        body: JSON.stringify({ workspace_id: workspaceId, state, updated_at: new Date().toISOString() }),
       });
       if (!response.ok) throw new Error(`Falha ao salvar o quadro (${response.status}).`);
     },
