@@ -51,6 +51,16 @@ export async function signUpWithPassword(email: string, password: string, fetche
   return body;
 }
 
+export async function refreshSupabaseSession(session: SupabaseSession, fetcher: Fetcher = fetch) {
+  const config = getSupabaseConfig();
+  if (!config || !session.refresh_token) return session;
+  const response = await fetcher(`${config.url}/auth/v1/token?grant_type=refresh_token`, {
+    method: 'POST', headers: { apikey: config.key, 'Content-Type': 'application/json' }, body: JSON.stringify({ refresh_token: session.refresh_token }),
+  });
+  if (!response.ok) throw new Error('Sessão expirada. Entre novamente.');
+  return await response.json() as SupabaseSession;
+}
+
 export function createSupabaseStateAdapter(session: SupabaseSession, fetcher: Fetcher = fetch, configured?: SupabaseConfig) {
   const config = configured ?? getSupabaseConfig();
   if (!config) throw new Error('Supabase não configurado.');
