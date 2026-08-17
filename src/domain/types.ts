@@ -54,5 +54,7 @@ export type BoardAction =
   | { type: 'createColumn'; column: Column }
   | { type: 'updateColumn'; column: Column }
   | { type: 'deleteColumn'; columnId: string }
+  | { type: 'moveColumn'; columnId: string; direction: 'left' | 'right' }
+  | { type: 'duplicateCard'; cardId: string }
   | { type: 'captureInbox'; item: InboxItem }
   | { type: 'promoteInbox'; itemId: string; card: Card };

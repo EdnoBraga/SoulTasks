@@ -27,6 +27,23 @@ export function boardReducer(state: BoardState, action: BoardAction): BoardState
       const next = { ...columns }; delete next[action.columnId];
       return { ...state, boards: { ...state.boards, [board.id]: { ...board, columns: next, columnIds: board.columnIds.filter((id) => id !== action.columnId) } } };
     }
+    case 'moveColumn': {
+      const index = board.columnIds.indexOf(action.columnId);
+      const nextIndex = action.direction === 'left' ? index - 1 : index + 1;
+      if (index < 0 || nextIndex < 0 || nextIndex >= board.columnIds.length) return state;
+      const columnIds = [...board.columnIds];
+      const current = columnIds[index]!;
+      const target = columnIds[nextIndex]!;
+      columnIds[index] = target;
+      columnIds[nextIndex] = current;
+      return { ...state, boards: { ...state.boards, [board.id]: { ...board, columnIds } } };
+    }
+    case 'duplicateCard': {
+      const source = cards[action.cardId];
+      if (!source) return state;
+      const copy = { ...source, id: crypto.randomUUID(), title: `${source.title} (cópia)`, createdAt: new Date().toISOString() };
+      return { ...state, boards: { ...state.boards, [board.id]: { ...board, cards: { ...cards, [copy.id]: copy } } } };
+    }
     case 'captureInbox': return { ...state, inbox: [action.item, ...state.inbox] };
     case 'promoteInbox': {
       const item = state.inbox.find((entry) => entry.id === action.itemId);
