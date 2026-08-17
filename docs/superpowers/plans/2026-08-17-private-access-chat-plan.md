@@ -19,6 +19,9 @@
 - Authorization must not use editable `user_metadata`.
 - Invitation sender: `faleconosco@soulfork.com.br`.
 - Preserve the existing deployment workflow and the original `soulfork.com.br` site.
+- Card assignees are the fixed internal members `Braga`, `Pallus`, and `Kayo`, with multi-select.
+- Voice transcription is committed to text only after the user stops recording; audio is never persisted.
+- The board must expose horizontal navigation and 80%/90%/100% zoom for four or more columns.
 
 ## File Map
 
@@ -29,9 +32,11 @@
 - Create `src/collaboration/realtime.ts`: Presence and Postgres Changes subscription lifecycle.
 - Create `src/components/WorkspaceMembers.tsx`: member list, roles, presence, and invite form.
 - Create `src/components/ChatPanel.tsx`: general/private channel list, messages, typing state, and composer.
+- Create `src/hooks/useVoiceTranscription.ts`: opt-in Portuguese voice capture and post-stop transcript insertion.
 - Modify `src/storage/supabaseStateAdapter.ts`: load/save the workspace-scoped board snapshot.
 - Modify `src/App.tsx`: private access gate, collaboration shell, and view state.
 - Modify `src/styles/global.css`: member, presence, chat, and invitation UI.
+- Modify board/card components and `src/styles/global.css`: multi-assignee selector, voice controls, horizontal scrolling, drag/touch navigation, and zoom.
 - Create `src/collaboration/collaborationApi.test.ts`: API contract tests with mocked fetch.
 - Create `src/collaboration/realtime.test.ts`: subscription and presence lifecycle tests.
 - Create `src/components/ChatPanel.test.tsx`: chat rendering, send, and private-channel switching tests.

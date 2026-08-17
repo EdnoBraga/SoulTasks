@@ -24,6 +24,19 @@ O remetente dos convites será `faleconosco@soulfork.com.br`.
 - indicar quando alguém está digitando;
 - manter o histórico protegido por RLS.
 
+### Experiência operacional do quadro
+
+- os responsáveis disponíveis serão `Braga`, `Pallus` e `Kayo`;
+- cada card poderá ter um, dois ou os três responsáveis selecionados;
+- Inbox, título, descrição, checklist e comentários terão ação de microfone;
+- a fala será transcrita em português brasileiro somente depois de “Parar
+  gravação”, e o texto ficará editável antes de ser salvo;
+- nenhum áudio será armazenado, e a digitação continuará disponível como
+  alternativa caso o navegador não ofereça reconhecimento de voz;
+- o quadro terá rolagem horizontal visível, suporte a arrastar no espaço vazio
+  e gesto de toque, além de zoom em 80%, 90% e 100% para acomodar quatro ou
+  mais colunas.
+
 ### Etapa 2 — sala de videochamada
 
 - qualquer usuário autenticado pode iniciar uma sala;
@@ -103,6 +116,26 @@ Interface planejada:
 - estado vazio com convite para iniciar a conversa;
 - mensagens de erro orientando a ação seguinte.
 
+### Criação de tarefas por voz e responsáveis
+
+O modal de criação/edição de card reutilizará um controle de voz contextual
+para os campos de texto. Ao iniciar, o navegador solicitará o microfone; ao
+parar, o resultado reconhecido será inserido no campo ativo e poderá ser
+revisado antes do envio. O controle exibirá estados “Gravando”, “Processando”
+e “Transcrição pronta”, com mensagem de recuperação para permissão negada,
+idioma indisponível ou navegador sem suporte.
+
+O seletor “Responsáveis” será multiseleção com busca e opções fixas Braga,
+Pallus e Kayo. Os responsáveis aparecerão no card e poderão ser alterados sem
+abrir uma tela separada.
+
+### Navegação do quadro
+
+O viewport do quadro será horizontalmente rolável e manterá a largura natural
+das colunas. A interação deverá funcionar por barra de rolagem, arraste com
+mouse no fundo do quadro, toque/trackpad e Shift+roda do mouse. O seletor de
+zoom será persistido localmente por navegador e não alterará os dados do board.
+
 ### Videochamada e compartilhamento de tela
 
 O frontend usará `getUserMedia` para câmera/microfone e `getDisplayMedia` para
@@ -156,6 +189,11 @@ segredos de conexão. Esses valores ficarão somente em secrets do Supabase.
 - mensagem geral chega aos três membros;
 - mensagem privada chega somente aos dois participantes;
 - RLS impede leitura direta por usuário externo.
+- card permite selecionar Braga, Pallus, Kayo, individualmente ou em conjunto;
+- Inbox e modal de card transcrevem a fala após “Parar gravação” e permitem
+  editar o texto antes de salvar;
+- quatro colunas podem ser alcançadas por rolagem, arraste e toque;
+- zoom 80%, 90% e 100% mantém cards e controles utilizáveis.
 
 ### Etapa 2
 
