@@ -9,6 +9,7 @@
     "test": "node ./node_modules/vitest/vitest.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.112.3",
     "lucide-react": "^0.544.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1"

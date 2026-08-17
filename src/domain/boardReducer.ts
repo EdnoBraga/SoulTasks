@@ -1,6 +1,7 @@
 import type { BoardAction, BoardState } from './types';
 
 export function boardReducer(state: BoardState, action: BoardAction): BoardState {
+  if (action.type === 'replaceState') return action.state;
   const board = state.boards[state.activeBoardId];
   if (!board) return state;
   const cards = { ...board.cards };

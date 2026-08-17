@@ -4,22 +4,44 @@ import { boardReducer } from './domain/boardReducer';
 import { createDemoState } from './domain/demoData';
 import type { Card, Column, ChecklistItem, Priority } from './domain/types';
 import { loadState, saveState } from './storage/localStorageAdapter';
+import { createSupabaseStateAdapter, getSupabaseConfig, loadSupabaseSession, saveSupabaseSession, signInWithPassword, signUpWithPassword, type SupabaseSession } from './storage/supabaseStateAdapter';
 
 const priorityText: Record<Priority, string> = { low: 'Baixa', medium: 'Média', high: 'Alta' };
 const newCard = (columnId: string): Card => ({ id: crypto.randomUUID(), columnId, title: '', description: '', priority: 'medium', labelIds: [], checklist: [], comments: [], createdAt: new Date().toISOString() });
 
 export default function App() {
   const [state, dispatch] = useReducer(boardReducer, undefined, () => loadState() ?? createDemoState());
+  const [session, setSession] = useState<SupabaseSession | null>(() => loadSupabaseSession());
+  const [remoteReady, setRemoteReady] = useState(false);
+  const [syncError, setSyncError] = useState('');
   const [query, setQuery] = useState(''); const [filter, setFilter] = useState<Priority | 'all'>('all');
   const [cardEditor, setCardEditor] = useState<{ card: Card; isNew: boolean } | null>(null); const [columnEditor, setColumnEditor] = useState<Column | null>(null); const [toast, setToast] = useState('');
   const board = state.boards[state.activeBoardId]!;
   const notify = (message: string) => { setToast(message); window.setTimeout(() => setToast(''), 2200); };
   useEffect(() => saveState(state), [state]);
+  useEffect(() => {
+    let cancelled = false;
+    setRemoteReady(false);
+    setSyncError('');
+    if (!session || !getSupabaseConfig()) { setRemoteReady(true); return () => { cancelled = true; }; }
+    const adapter = createSupabaseStateAdapter(session);
+    void adapter.load().then((remoteState) => {
+      if (cancelled) return;
+      if (remoteState) dispatch({ type: 'replaceState', state: remoteState });
+      else void adapter.save(state).catch((error: unknown) => setSyncError(error instanceof Error ? error.message : 'Falha ao criar o quadro remoto.'));
+    }).catch((error: unknown) => { if (!cancelled) setSyncError(error instanceof Error ? error.message : 'Falha ao carregar o quadro remoto.'); }).finally(() => { if (!cancelled) setRemoteReady(true); });
+    return () => { cancelled = true; };
+  }, [session]);
+  useEffect(() => {
+    if (!session || !remoteReady || !getSupabaseConfig()) return;
+    void createSupabaseStateAdapter(session).save(state).catch((error: unknown) => setSyncError(error instanceof Error ? error.message : 'Falha ao sincronizar o quadro.'));
+  }, [state, session, remoteReady]);
   useEffect(() => { const handler = (event: KeyboardEvent) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setCardEditor({ card: newCard(board.columnIds[0]!), isNew: true }); } }; window.addEventListener('keydown', handler); return () => window.removeEventListener('keydown', handler); }, [board.columnIds]);
   const visibleCards = useMemo(() => Object.values(board.cards).filter((card) => `${card.title} ${card.description}`.toLowerCase().includes(query.toLowerCase()) && (filter === 'all' || card.priority === filter)), [board.cards, filter, query]);
   const saveCard = (card: Card) => { dispatch({ type: cardEditor?.isNew ? 'createCard' : 'updateCard', card }); setCardEditor(null); notify(cardEditor?.isNew ? 'Card criado' : 'Card atualizado'); };
   const capture = (title: string) => { if (!title.trim()) return; dispatch({ type: 'captureInbox', item: { id: crypto.randomUUID(), title: title.trim(), description: '', createdAt: new Date().toISOString() } }); notify('Guardado na Inbox'); };
   return <div className="app-shell"><Topbar query={query} onQuery={setQuery} />
+    {session && <div className="sync-status">{syncError || 'Quadro sincronizado com o Supabase'}</div>}
     <main className="workspace"><InboxPanel items={state.inbox} onCapture={capture} onPromote={(item) => { const card = { ...newCard(board.columnIds[0]!), title: item.title, description: item.description }; dispatch({ type: 'promoteInbox', itemId: item.id, card }); notify('Movido para A fazer'); }} />
       <section className="board-area"><div className="board-header"><div><div className="section-kicker">workspace pessoal</div><h1>{board.name}</h1><p>{board.description}</p></div><div className="board-header-actions"><button className="button secondary"><LayoutGrid size={16} /> Visão quadro <ChevronDown size={15} /></button><button className="button primary" onClick={() => setCardEditor({ card: newCard(board.columnIds[0]!), isNew: true })}><CirclePlus size={17} /> Novo card</button></div></div>
         <div className="board-toolbar"><div className="member-stack"><div className="mini-avatar cyan">EB</div><div className="mini-avatar violet">+</div><span>Seu espaço de trabalho</span></div><div className="toolbar-actions"><div className="filter-wrap"><Filter size={15} /><select value={filter} onChange={(event) => setFilter(event.target.value as Priority | 'all')} aria-label="Filtrar por prioridade"><option value="all">Todos os cards</option><option value="high">Prioridade alta</option><option value="medium">Prioridade média</option><option value="low">Prioridade baixa</option></select></div><button className="icon-button ghost" aria-label="Mais opções"><MoreHorizontal size={18} /></button></div></div>
@@ -28,8 +50,24 @@ export default function App() {
     </main>
     {cardEditor && <CardModal card={cardEditor.card} columns={board.columnIds.map((id) => board.columns[id]).filter((column): column is Column => Boolean(column))} labels={state.labels} onClose={() => setCardEditor(null)} onSave={saveCard} onDelete={() => { dispatch({ type: 'deleteCard', cardId: cardEditor.card.id }); setCardEditor(null); notify('Card excluído'); }} onDuplicate={() => { dispatch({ type: 'duplicateCard', cardId: cardEditor.card.id }); setCardEditor(null); notify('Card duplicado'); }} />}
     {columnEditor && <ColumnModal column={columnEditor} exists={Boolean(board.columns[columnEditor.id])} onClose={() => setColumnEditor(null)} onSave={(column) => { dispatch({ type: board.columns[column.id] ? 'updateColumn' : 'createColumn', column }); setColumnEditor(null); notify('Coluna salva'); }} onDelete={() => { dispatch({ type: 'deleteColumn', columnId: columnEditor.id }); setColumnEditor(null); notify('Coluna arquivada'); }} />}
+    {!session && <AuthPanel onAuthenticated={(nextSession) => { saveSupabaseSession(nextSession); setSession(nextSession); }} />}
     {toast && <div className="toast" role="status"><Check size={16} /> {toast}</div>}
   </div>;
+}
+
+function AuthPanel({ onAuthenticated }: { onAuthenticated: (session: SupabaseSession) => void }) {
+  const [mode, setMode] = useState<'signIn' | 'signUp'>('signIn');
+  const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [message, setMessage] = useState(''); const [busy, setBusy] = useState(false);
+  const submit = async () => {
+    setBusy(true); setMessage('');
+    try {
+      const nextSession = mode === 'signIn' ? await signInWithPassword(email, password) : await signUpWithPassword(email, password);
+      if (nextSession.access_token) { saveSupabaseSession(nextSession); onAuthenticated(nextSession); }
+      else setMessage('Conta criada. Confirme o e-mail e depois entre no SoulTasks.');
+    } catch (error: unknown) { setMessage(error instanceof Error ? error.message : 'Não foi possível autenticar.'); }
+    finally { setBusy(false); }
+  };
+  return <div className="modal-backdrop"><div className="modal auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title"><div className="modal-head"><div><span className="section-kicker">sincronização segura</span><h2 id="auth-title">{mode === 'signIn' ? 'Entrar no SoulTasks' : 'Criar acesso'}</h2></div></div><p className="auth-copy">Entre para salvar cards, colunas e Inbox na nuvem. Cada acesso fica protegido pelo Supabase.</p><label className="field"><span>E-mail</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="voce@empresa.com" /></label><label className="field"><span>Senha</span><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Mínimo de 6 caracteres" /></label>{message && <p className="auth-message">{message}</p>}<div className="modal-foot"><button className="text-action" onClick={() => { setMode(mode === 'signIn' ? 'signUp' : 'signIn'); setMessage(''); }}>{mode === 'signIn' ? 'Ainda não tenho acesso' : 'Já tenho acesso'}</button><button className="button primary" disabled={busy || !email || password.length < 6} onClick={submit}>{busy ? 'Aguarde...' : mode === 'signIn' ? 'Entrar' : 'Criar conta'}</button></div></div></div>;
 }
 
 function Topbar({ query, onQuery }: { query: string; onQuery: (value: string) => void }) { return <header className="topbar"><div className="brand-mark"><span className="brand-orbit" /><span>SoulBoard</span></div><nav className="topnav"><button className="nav-link active">Meus quadros</button><button className="nav-link">Atividade</button><button className="nav-link">Calendário</button></nav><div className="top-actions"><label className="search"><Search size={16} /><input value={query} onChange={(event) => onQuery(event.target.value)} placeholder="Buscar cards..." /><kbd>⌘ K</kbd></label><button className="icon-button" aria-label="Notificações"><Bell size={18} /></button><div className="avatar">EB</div></div></header>; }

@@ -3,3 +3,6 @@ dist/
 *.tsbuildinfo
 qa-*.png
 .superpowers/
+.env.local
+.env.*.local
+soulTasks-dist.zip
