@@ -4,7 +4,12 @@ import { boardReducer } from './domain/boardReducer';
 import { createDemoState } from './domain/demoData';
 import type { Board, BoardState, Card, Column, ChecklistItem, Priority } from './domain/types';
 import { loadState, saveState } from './storage/localStorageAdapter';
-import { createSupabaseStateAdapter, getSupabaseConfig, loadSupabaseSession, refreshSupabaseSession, saveSupabaseSession, signInWithPassword, signUpWithPassword, type SupabaseSession } from './storage/supabaseStateAdapter';
+import { createSupabaseStateAdapter, getSupabaseConfig, loadSupabaseSession, refreshSupabaseSession, saveSupabaseSession, signInWithPassword, type SupabaseSession } from './storage/supabaseStateAdapter';
+import { inviteWorkspaceMember, loadWorkspaceContext, SOULFORK_WORKSPACE_ID, listMessages, sendMessage } from './collaboration/collaborationApi';
+import type { ChatChannel, ChatMessage, PresenceStatus, WorkspaceMember } from './collaboration/types';
+import { subscribeToMessages, subscribeToWorkspacePresence, type PresenceEntry } from './collaboration/realtime';
+import WorkspaceMembers from './components/WorkspaceMembers';
+import ChatPanel from './components/ChatPanel';
 
 const priorityText: Record<Priority, string> = { low: 'Baixa', medium: 'Média', high: 'Alta' };
 const newCard = (columnId: string): Card => ({ id: crypto.randomUUID(), columnId, title: '', description: '', priority: 'medium', labelIds: [], checklist: [], comments: [], createdAt: new Date().toISOString() });
@@ -13,6 +18,14 @@ type AppView = 'board' | 'activity' | 'calendar';
 export default function App() {
   const [state, dispatch] = useReducer(boardReducer, undefined, () => loadState() ?? createDemoState());
   const [session, setSession] = useState<SupabaseSession | null>(() => loadSupabaseSession());
+  const [workspaceReady, setWorkspaceReady] = useState(false);
+  const [workspaceError, setWorkspaceError] = useState('');
+  const [members, setMembers] = useState<WorkspaceMember[]>([]);
+  const [channels, setChannels] = useState<ChatChannel[]>([]);
+  const [presence, setPresence] = useState<Record<string, PresenceStatus>>({});
+  const [activeChannelId, setActiveChannelId] = useState<string>();
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [chatOpen, setChatOpen] = useState(false);
   const [remoteReady, setRemoteReady] = useState(false);
   const [syncError, setSyncError] = useState('');
   const [query, setQuery] = useState(''); const [filter, setFilter] = useState<Priority | 'all'>('all'); const [activeView, setActiveView] = useState<AppView>('board');
@@ -26,34 +39,67 @@ export default function App() {
   }, []);
   useEffect(() => {
     let cancelled = false;
+    setWorkspaceReady(false);
+    setWorkspaceError('');
+    setMembers([]); setChannels([]); setMessages([]); setActiveChannelId(undefined);
+    const config = getSupabaseConfig();
+    if (!session || !config) { setWorkspaceReady(true); return () => { cancelled = true; }; }
+    void loadWorkspaceContext(session, fetch, config).then((context) => {
+      if (cancelled) return;
+      setMembers(context.members); setChannels(context.channels); setActiveChannelId(context.channels[0]?.id); setWorkspaceReady(true);
+    }).catch((error: unknown) => { if (!cancelled) { setWorkspaceError(error instanceof Error ? error.message : 'Não foi possível carregar o workspace.'); setWorkspaceReady(true); } });
+    return () => { cancelled = true; };
+  }, [session]);
+  useEffect(() => {
+    let cancelled = false;
     setRemoteReady(false);
     setSyncError('');
-    if (!session || !getSupabaseConfig()) { setRemoteReady(true); return () => { cancelled = true; }; }
-    const adapter = createSupabaseStateAdapter(session);
+    const config = getSupabaseConfig();
+    if (!session || !workspaceReady || workspaceError || !config) { setRemoteReady(true); return () => { cancelled = true; }; }
+    const adapter = createSupabaseStateAdapter(session, SOULFORK_WORKSPACE_ID, fetch, config);
     void adapter.load().then((remoteState) => {
       if (cancelled) return;
       if (remoteState) dispatch({ type: 'replaceState', state: remoteState });
       else void adapter.save(state).catch((error: unknown) => setSyncError(error instanceof Error ? error.message : 'Falha ao criar o quadro remoto.'));
     }).catch((error: unknown) => { if (!cancelled) setSyncError(error instanceof Error ? error.message : 'Falha ao carregar o quadro remoto.'); }).finally(() => { if (!cancelled) setRemoteReady(true); });
     return () => { cancelled = true; };
-  }, [session]);
+  }, [session, workspaceReady, workspaceError]);
   useEffect(() => {
-    if (!session || !remoteReady || !getSupabaseConfig()) return;
-    void createSupabaseStateAdapter(session).save(state).catch((error: unknown) => setSyncError(error instanceof Error ? error.message : 'Falha ao sincronizar o quadro.'));
-  }, [state, session, remoteReady]);
+    const config = getSupabaseConfig();
+    if (!session || !remoteReady || !workspaceReady || workspaceError || !config) return;
+    void createSupabaseStateAdapter(session, SOULFORK_WORKSPACE_ID, fetch, config).save(state).catch((error: unknown) => setSyncError(error instanceof Error ? error.message : 'Falha ao sincronizar o quadro.'));
+  }, [state, session, remoteReady, workspaceReady, workspaceError]);
+  useEffect(() => {
+    const config = getSupabaseConfig();
+    if (!session || !workspaceReady || workspaceError || !config) return;
+    return subscribeToWorkspacePresence(SOULFORK_WORKSPACE_ID, session, config, (entries: PresenceEntry[]) => setPresence(entries.reduce<Record<string, PresenceStatus>>((result, entry) => { result[entry.userId] = entry.status; return result; }, {})));
+  }, [session, workspaceReady, workspaceError]);
+  useEffect(() => {
+    let cancelled = false;
+    const config = getSupabaseConfig();
+    if (!session || !activeChannelId || !workspaceReady || workspaceError || !config) return;
+    void listMessages(activeChannelId, session, fetch, config).then((next) => { if (!cancelled) setMessages(next); }).catch((error: unknown) => { if (!cancelled) setSyncError(error instanceof Error ? error.message : 'Falha ao carregar o chat.'); });
+    const unsubscribe = subscribeToMessages(activeChannelId, session, config, (raw) => { if (!cancelled) setMessages((current) => current.some((message) => message.id === raw.id) ? current : [...current, { id: String(raw.id), channelId: String(raw.channel_id), authorId: String(raw.author_id), content: String(raw.content), createdAt: String(raw.created_at), updatedAt: raw.updated_at ? String(raw.updated_at) : undefined }]); });
+    return () => { cancelled = true; unsubscribe?.(); };
+  }, [activeChannelId, session, workspaceReady, workspaceError]);
   useEffect(() => { const handler = (event: KeyboardEvent) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setCardEditor({ card: newCard(board.columnIds[0]!), isNew: true }); } }; window.addEventListener('keydown', handler); return () => window.removeEventListener('keydown', handler); }, [board.columnIds]);
   const visibleCards = useMemo(() => Object.values(board.cards).filter((card) => `${card.title} ${card.description}`.toLowerCase().includes(query.toLowerCase()) && (filter === 'all' || card.priority === filter)), [board.cards, filter, query]);
   const saveCard = (card: Card) => { dispatch({ type: cardEditor?.isNew ? 'createCard' : 'updateCard', card }); setCardEditor(null); notify(cardEditor?.isNew ? 'Card criado' : 'Card atualizado'); };
   const capture = (title: string) => { if (!title.trim()) return; dispatch({ type: 'captureInbox', item: { id: crypto.randomUUID(), title: title.trim(), description: '', createdAt: new Date().toISOString() } }); notify('Guardado na Inbox'); };
   const openView = (view: AppView) => setActiveView(view);
-  return <div className="app-shell"><Topbar activeView={activeView} query={query} onQuery={setQuery} onViewChange={openView} onNotify={() => notify('Você não tem novas notificações')} onSignOut={() => { saveSupabaseSession(null); setSession(null); }} />
+  const signOut = () => { saveSupabaseSession(null); setSession(null); setWorkspaceReady(false); };
+  const showDashboard = !getSupabaseConfig() || Boolean(session && workspaceReady && !workspaceError);
+  return <div className="app-shell"><Topbar activeView={activeView} query={query} onQuery={setQuery} onViewChange={openView} onNotify={() => notify('Você não tem novas notificações')} onChat={() => setChatOpen((open) => !open)} onSignOut={signOut} />
     {session && <div className="sync-status">{syncError || 'Quadro sincronizado com o Supabase'}</div>}
-    <main className="workspace"><InboxPanel items={state.inbox} onCapture={capture} onConfigure={() => notify('A Inbox já está pronta para capturas rápidas')} onPromote={(item) => { const card = { ...newCard(board.columnIds[0]!), title: item.title, description: item.description }; dispatch({ type: 'promoteInbox', itemId: item.id, card }); notify('Movido para A fazer'); }} />
+    {session && getSupabaseConfig() && !workspaceReady && <div className="access-state"><Sparkles size={24} /><h2>Carregando workspace...</h2><p>Validando seu acesso e preparando os dados compartilhados.</p></div>}
+    {session && workspaceError && <div className="access-state"><X size={24} /><h2>Acesso não autorizado</h2><p>{workspaceError}</p><button className="button secondary" onClick={signOut}>Sair</button></div>}
+    {showDashboard && <main className="workspace"><InboxPanel items={state.inbox} onCapture={capture} onConfigure={() => notify('A Inbox já está pronta para capturas rápidas')} onPromote={(item) => { const card = { ...newCard(board.columnIds[0]!), title: item.title, description: item.description }; dispatch({ type: 'promoteInbox', itemId: item.id, card }); notify('Movido para A fazer'); }} />
       <section className="board-area">{activeView === 'board' && <BoardView board={board} state={state} visibleCards={visibleCards} filter={filter} setFilter={setFilter} onOpenCard={(card) => setCardEditor({ card, isNew: false })} onAddCard={(columnId) => setCardEditor({ card: newCard(columnId), isNew: true })} onNewCard={() => setCardEditor({ card: newCard(board.columnIds[0]!), isNew: true })} onNewColumn={() => setColumnEditor({ id: crypto.randomUUID(), name: '', color: '#5B8CFF', icon: '✦', description: '', complete: false })} onEditColumn={setColumnEditor} onMoveCard={(cardId, columnId, name) => { dispatch({ type: 'moveCard', cardId, columnId }); notify(`Card movido para ${name}`); }} onShiftColumn={(columnId, direction) => dispatch({ type: 'moveColumn', columnId, direction })} onViewChange={openView} onNotify={notify} />}
         {activeView === 'activity' && <ActivityView state={state} board={board} onOpenCard={(card) => { setActiveView('board'); setCardEditor({ card, isNew: false }); }} />}
         {activeView === 'calendar' && <CalendarView board={board} onOpenCard={(card) => { setActiveView('board'); setCardEditor({ card, isNew: false }); }} />}
       </section>
-    </main>
+    </main>}
+    {showDashboard && session && members.length > 0 && <div className="collaboration-strip"><WorkspaceMembers members={members} presence={presence} isAdmin={members.find((member) => member.userId === session.user.id)?.role === 'admin'} onInvite={async (email, displayName) => { try { await inviteWorkspaceMember(email, displayName, session, fetch, getSupabaseConfig() ?? undefined); notify('Convite enviado por e-mail.'); } catch (error: unknown) { notify(error instanceof Error ? error.message : 'Falha ao enviar convite.'); throw error; } }} />{chatOpen && <ChatPanel channels={channels} messages={messages} activeChannelId={activeChannelId} currentUserId={session.user.id} onSelectChannel={setActiveChannelId} onSend={(content) => { if (!activeChannelId) return; void sendMessage(activeChannelId, content, session, fetch, getSupabaseConfig() ?? undefined).then((message) => setMessages((current) => current.some((item) => item.id === message.id) ? current : [...current, message])).catch((error: unknown) => notify(error instanceof Error ? error.message : 'Falha ao enviar mensagem.')); }} onClose={() => setChatOpen(false)} />}</div>}
     {cardEditor && <CardModal card={cardEditor.card} columns={board.columnIds.map((id) => board.columns[id]).filter((column): column is Column => Boolean(column))} labels={state.labels} onClose={() => setCardEditor(null)} onSave={saveCard} onDelete={() => { dispatch({ type: 'deleteCard', cardId: cardEditor.card.id }); setCardEditor(null); notify('Card excluído'); }} onDuplicate={() => { dispatch({ type: 'duplicateCard', cardId: cardEditor.card.id }); setCardEditor(null); notify('Card duplicado'); }} />}
     {columnEditor && <ColumnModal column={columnEditor} exists={Boolean(board.columns[columnEditor.id])} onClose={() => setColumnEditor(null)} onSave={(column) => { dispatch({ type: board.columns[column.id] ? 'updateColumn' : 'createColumn', column }); setColumnEditor(null); notify('Coluna salva'); }} onDelete={() => { dispatch({ type: 'deleteColumn', columnId: columnEditor.id }); setColumnEditor(null); notify('Coluna arquivada'); }} />}
     {!session && <AuthPanel onAuthenticated={(nextSession) => { saveSupabaseSession(nextSession); setSession(nextSession); }} />}
@@ -61,22 +107,20 @@ export default function App() {
   </div>;
 }
 
-function AuthPanel({ onAuthenticated }: { onAuthenticated: (session: SupabaseSession) => void }) {
-  const [mode, setMode] = useState<'signIn' | 'signUp'>('signIn');
+export function AuthPanel({ onAuthenticated }: { onAuthenticated: (session: SupabaseSession) => void }) {
   const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [message, setMessage] = useState(''); const [busy, setBusy] = useState(false);
   const submit = async () => {
     setBusy(true); setMessage('');
     try {
-      const nextSession = mode === 'signIn' ? await signInWithPassword(email, password) : await signUpWithPassword(email, password);
+      const nextSession = await signInWithPassword(email, password);
       if (nextSession.access_token) { saveSupabaseSession(nextSession); onAuthenticated(nextSession); }
-      else setMessage('Conta criada. Confirme o e-mail e depois entre no SoulTasks.');
     } catch (error: unknown) { setMessage(error instanceof Error ? error.message : 'Não foi possível autenticar.'); }
     finally { setBusy(false); }
   };
-  return <div className="modal-backdrop"><div className="modal auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title"><div className="modal-head"><div><span className="section-kicker">sincronização segura</span><h2 id="auth-title">{mode === 'signIn' ? 'Entrar no SoulTasks' : 'Criar acesso'}</h2></div></div><p className="auth-copy">Entre para salvar cards, colunas e Inbox na nuvem. Cada acesso fica protegido pelo Supabase.</p><label className="field"><span>E-mail</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="voce@empresa.com" /></label><label className="field"><span>Senha</span><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Mínimo de 6 caracteres" /></label>{message && <p className="auth-message">{message}</p>}<div className="modal-foot"><button className="text-action" onClick={() => { setMode(mode === 'signIn' ? 'signUp' : 'signIn'); setMessage(''); }}>{mode === 'signIn' ? 'Ainda não tenho acesso' : 'Já tenho acesso'}</button><button className="button primary" disabled={busy || !email || password.length < 6} onClick={submit}>{busy ? 'Aguarde...' : mode === 'signIn' ? 'Entrar' : 'Criar conta'}</button></div></div></div>;
+  return <div className="modal-backdrop"><div className="modal auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title"><div className="modal-head"><div><span className="section-kicker">workspace privado</span><h2 id="auth-title">Entrar no SoulTasks</h2></div></div><p className="auth-copy">O acesso é criado por convite do administrador. Entre para salvar cards, colunas e Inbox no workspace compartilhado.</p><label className="field"><span>E-mail</span><input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="voce@empresa.com" /></label><label className="field"><span>Senha</span><input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Sua senha" /></label>{message && <p className="auth-message">{message}</p>}<div className="modal-foot"><span className="auth-hint">Somente membros convidados podem entrar.</span><button className="button primary" disabled={busy || !email || password.length < 6} onClick={submit}>{busy ? 'Aguarde...' : 'Entrar'}</button></div></div></div>;
 }
 
-function Topbar({ activeView, query, onQuery, onViewChange, onNotify, onSignOut }: { activeView: AppView; query: string; onQuery: (value: string) => void; onViewChange: (view: AppView) => void; onNotify: () => void; onSignOut: () => void }) { return <header className="topbar"><div className="brand-mark"><img className="brand-logo" src="/brand/logopreto.PNG" alt="SoulFork" /><span>SoulTasks</span></div><nav className="topnav" aria-label="Navegação principal"><button className={`nav-link ${activeView === 'board' ? 'active' : ''}`} onClick={() => onViewChange('board')}>Meus quadros</button><button className={`nav-link ${activeView === 'activity' ? 'active' : ''}`} onClick={() => onViewChange('activity')}>Atividade</button><button className={`nav-link ${activeView === 'calendar' ? 'active' : ''}`} onClick={() => onViewChange('calendar')}>Calendário</button></nav><div className="top-actions"><label className="search"><Search size={16} /><input value={query} onChange={(event) => onQuery(event.target.value)} placeholder="Buscar cards..." /><kbd>⌘ K</kbd></label><button className="icon-button" aria-label="Notificações" onClick={onNotify}><Bell size={18} /></button><button className="avatar" onClick={onSignOut} title="Sair">EB</button></div></header>; }
+function Topbar({ activeView, query, onQuery, onViewChange, onNotify, onChat, onSignOut }: { activeView: AppView; query: string; onQuery: (value: string) => void; onViewChange: (view: AppView) => void; onNotify: () => void; onChat: () => void; onSignOut: () => void }) { return <header className="topbar"><div className="brand-mark"><img className="brand-logo" src="/brand/logopreto.PNG" alt="SoulFork" /><span>SoulTasks</span></div><nav className="topnav" aria-label="Navegação principal"><button className={`nav-link ${activeView === 'board' ? 'active' : ''}`} onClick={() => onViewChange('board')}>Meus quadros</button><button className={`nav-link ${activeView === 'activity' ? 'active' : ''}`} onClick={() => onViewChange('activity')}>Atividade</button><button className={`nav-link ${activeView === 'calendar' ? 'active' : ''}`} onClick={() => onViewChange('calendar')}>Calendário</button></nav><div className="top-actions"><label className="search"><Search size={16} /><input value={query} onChange={(event) => onQuery(event.target.value)} placeholder="Buscar cards..." /><kbd>⌘ K</kbd></label><button className="icon-button" aria-label="Abrir chat" onClick={onChat}><MessageCircle size={18} /></button><button className="icon-button" aria-label="Notificações" onClick={onNotify}><Bell size={18} /></button><button className="avatar" onClick={onSignOut} title="Sair">EB</button></div></header>; }
 
 function InboxPanel({ items, onCapture, onConfigure, onPromote }: { items: { id: string; title: string; description: string }[]; onCapture: (title: string) => void; onConfigure: () => void; onPromote: (item: { id: string; title: string; description: string }) => void }) { const [value, setValue] = useState(''); const submit = () => { onCapture(value); setValue(''); }; return <aside className="inbox-panel"><div className="inbox-heading"><div><div className="section-kicker">captura rápida</div><h2><Inbox size={19} /> Inbox</h2></div><button className="icon-button ghost" aria-label="Configurar Inbox" onClick={onConfigure}><Settings2 size={17} /></button></div><div className="quick-capture"><textarea value={value} onChange={(event) => setValue(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); submit(); } }} placeholder="Adicione uma ideia ou tarefa..." rows={2} /><div className="quick-bottom"><span><Plus size={17} /> Enter para guardar</span><button className="send-button" onClick={submit} aria-label="Guardar captura"><Zap size={16} /></button></div></div><div className="inbox-list">{items.map((item) => <article className="inbox-item" key={item.id}><div className="inbox-item-top"><Sparkles size={14} /><span>ideia capturada</span></div><h3>{item.title}</h3><p>{item.description || 'Sem descrição ainda.'}</p><button className="text-action" onClick={() => onPromote(item)}>Organizar no quadro <ChevronDown size={14} /></button></article>)}</div><div className="inbox-footer"><Zap size={16} /><span>Pressione <b>/</b> para capturar de qualquer lugar.</span></div></aside>; }
 

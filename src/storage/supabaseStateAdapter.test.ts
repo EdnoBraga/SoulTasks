@@ -17,8 +17,9 @@ describe('Supabase state adapter', () => {
       if (init?.method === 'POST') stored = JSON.parse(String(init.body));
       return new Response(stored ? JSON.stringify([{ state: stored.state }]) : '[]', { status: 200 });
     };
-    const adapter = createSupabaseStateAdapter(session, fetcher as typeof fetch, { url: 'https://example.supabase.co', key: 'public-key' });
+    const adapter = createSupabaseStateAdapter(session, 'workspace-1', fetcher as typeof fetch, { url: 'https://example.supabase.co', key: 'public-key' });
     await adapter.save(state);
     expect(await adapter.load()).toEqual(state);
+    expect(stored).toMatchObject({ workspace_id: 'workspace-1' });
   });
 });
