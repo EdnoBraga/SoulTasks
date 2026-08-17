@@ -9,11 +9,11 @@ const columns: Column[] = [
 ];
 
 const cards: Card[] = [
-  { id: 'card-1', columnId: 'todo', title: 'Mapear os próximos conteúdos da SoulFork', description: 'Escolher os temas que viram artigos e Reels nesta semana.', priority: 'high', labelIds: ['content'], checklist: [], comments: [], createdAt: now },
-  { id: 'card-2', columnId: 'todo', title: 'Revisar páginas de serviços', description: '', priority: 'medium', labelIds: ['site'], dueDate: '2026-08-21', checklist: [{ id: 'c1', text: 'Conferir CTA', done: true }, { id: 'c2', text: 'Validar links', done: false }], comments: [], createdAt: now },
-  { id: 'card-3', columnId: 'doing', title: 'Criar fluxo de triagem no WhatsApp', description: 'Organizar entrada, classificação e próximo passo do contato.', priority: 'high', labelIds: ['automation'], checklist: [], comments: ['Definir campos mínimos antes de automatizar.'], createdAt: now },
-  { id: 'card-4', columnId: 'review', title: 'Dashboard de operação digital', description: 'Versão inicial para acompanhar leads, atendimento e tarefas.', priority: 'medium', labelIds: ['data'], dueDate: '2026-08-24', checklist: [], comments: [], createdAt: now },
-  { id: 'card-5', columnId: 'done', title: 'Definir identidade cromática', description: 'Paleta escura com ciano, violeta e verde de confirmação.', priority: 'low', labelIds: ['design'], checklist: [], comments: [], createdAt: now },
+  { id: 'card-1', columnId: 'todo', title: 'Mapear os próximos conteúdos da SoulFork', description: 'Escolher os temas que viram artigos e Reels nesta semana.', priority: 'high', labelIds: ['content'], assigneeIds: ['braga'], checklist: [], comments: [], createdAt: now },
+  { id: 'card-2', columnId: 'todo', title: 'Revisar páginas de serviços', description: '', priority: 'medium', labelIds: ['site'], assigneeIds: ['pallus'], dueDate: '2026-08-21', checklist: [{ id: 'c1', text: 'Conferir CTA', done: true }, { id: 'c2', text: 'Validar links', done: false }], comments: [], createdAt: now },
+  { id: 'card-3', columnId: 'doing', title: 'Criar fluxo de triagem no WhatsApp', description: 'Organizar entrada, classificação e próximo passo do contato.', priority: 'high', labelIds: ['automation'], assigneeIds: ['pallus', 'kayo'], checklist: [], comments: ['Definir campos mínimos antes de automatizar.'], createdAt: now },
+  { id: 'card-4', columnId: 'review', title: 'Dashboard de operação digital', description: 'Versão inicial para acompanhar leads, atendimento e tarefas.', priority: 'medium', labelIds: ['data'], assigneeIds: ['braga', 'pallus', 'kayo'], dueDate: '2026-08-24', checklist: [], comments: [], createdAt: now },
+  { id: 'card-5', columnId: 'done', title: 'Definir identidade cromática', description: 'Paleta escura com ciano, violeta e verde de confirmação.', priority: 'low', labelIds: ['design'], assigneeIds: [], checklist: [], comments: [], createdAt: now },
 ];
 
 export function createDemoState(): BoardState {

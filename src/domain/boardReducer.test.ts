@@ -5,7 +5,7 @@ import { createDemoState } from './demoData';
 describe('boardReducer', () => {
   it('cria e move um card entre colunas sem perder os cards existentes', () => {
     const initial = createDemoState();
-    const card = { id: 'test-card', columnId: 'todo', title: 'Teste', description: '', priority: 'medium' as const, labelIds: [], checklist: [], comments: [], createdAt: new Date().toISOString() };
+    const card = { id: 'test-card', columnId: 'todo', title: 'Teste', description: '', priority: 'medium' as const, labelIds: [], assigneeIds: [], checklist: [], comments: [], createdAt: new Date().toISOString() };
     const created = boardReducer(initial, { type: 'createCard', card });
     const moved = boardReducer(created, { type: 'moveCard', cardId: card.id, columnId: 'doing' });
     expect(moved.boards.main!.cards[card.id]!.columnId).toBe('doing');

@@ -11,6 +11,7 @@ export type Card = {
   description: string;
   priority: Priority;
   labelIds: string[];
+  assigneeIds: string[];
   dueDate?: string;
   checklist: ChecklistItem[];
   comments: string[];
