@@ -38,12 +38,13 @@ export async function prepareVideoElement(element: HTMLVideoElement, stream: Med
   element.srcObject = stream;
   element.muted = mute;
   element.playsInline = true;
+  element.onloadedmetadata = () => { void element.play().catch(() => undefined); };
   try { await element.play(); } catch { /* o navegador pode aguardar uma interação do usuário */ }
 }
 
 export async function requestCameraAndMicrophone(): Promise<MediaStream> {
   if (!navigator.mediaDevices?.getUserMedia) throw new MediaRequestError('unsupported', 'Este navegador não oferece câmera e microfone.');
-  try { return await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: { echoCancellation: true, noiseSuppression: true } }); }
+  try { return await navigator.mediaDevices.getUserMedia({ video: true, audio: { echoCancellation: true, noiseSuppression: true } }); }
   catch (error) { const name = error instanceof DOMException ? error.name : ''; if (name === 'NotAllowedError' || name === 'PermissionDeniedError') throw new MediaRequestError('permission-denied', 'Permita a câmera e o microfone para entrar na chamada.'); if (name === 'NotFoundError') throw new MediaRequestError('device-unavailable', 'Nenhuma câmera ou microfone disponível.'); if (name === 'NotReadableError' || name === 'AbortError') throw new MediaRequestError('unknown', 'A câmera ou o microfone já está sendo usado por outro aplicativo.'); if (name === 'OverconstrainedError') throw new MediaRequestError('unknown', 'A câmera selecionada não atende aos requisitos do navegador.'); if (name === 'SecurityError') throw new MediaRequestError('unknown', 'O navegador bloqueou o acesso à câmera. Verifique as permissões deste site.'); throw new MediaRequestError('unknown', 'Não foi possível iniciar câmera e microfone.'); }
 }
 
