@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { Filter, RotateCcw } from 'lucide-react';
+import { Filter, Moon, RotateCcw, Sun } from 'lucide-react';
+import { useEffect } from 'react';
 import { SOULFORK_ASSIGNEES } from '../domain/assignees';
 import type { Priority } from '../domain/types';
+import { nextTheme, readTheme, saveTheme, type Theme } from '../domain/theme';
 
 type DueFilter = 'all' | 'overdue' | 'today' | 'week' | 'none';
 type QuickFilters = { assigneeId: string; labelId: string; due: DueFilter; priority: Priority | 'all' };
@@ -17,6 +19,8 @@ const LABELS = [
 
 export default function BoardNavigation() {
   const [filters, setFilters] = useState<QuickFilters>(EMPTY_FILTERS);
+  const [theme, setTheme] = useState<Theme>(() => readTheme());
+  useEffect(() => { saveTheme(theme); }, [theme]);
 
   const updateFilter = <K extends keyof QuickFilters>(key: K, value: QuickFilters[K]) => {
     const next = { ...filters, [key]: value };
@@ -28,7 +32,7 @@ export default function BoardNavigation() {
   const hasFilters = Object.values(filters).some((value) => value !== 'all');
 
   return <div className="board-navigation" aria-label="Filtros rápidos e navegação do quadro">
-    <div className="quick-filter-title"><Filter size={14} /><span>Filtros rápidos</span></div>
+    <div className="quick-filter-title"><Filter size={14} /><span>Filtros rápidos</span></div><button className="theme-toggle" onClick={() => setTheme(nextTheme(theme))} aria-label={`Ativar modo ${theme === 'dark' ? 'claro' : 'escuro'}`} title={`Modo ${theme === 'dark' ? 'claro' : 'escuro'}`}>{theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}<span>{theme === 'dark' ? 'Claro' : 'Escuro'}</span></button>
     <button className="saved-filter" onClick={() => applySavedFilter('mine')}>Minhas tarefas</button><button className="saved-filter" onClick={() => applySavedFilter('overdue')}>Atrasadas</button><button className="saved-filter" onClick={() => applySavedFilter('week')}>Esta semana</button>
     <select value={filters.assigneeId} onChange={(event) => updateFilter('assigneeId', event.target.value)} aria-label="Filtrar por responsável">
       <option value="all">Responsável: todos</option><option value="unassigned">Sem responsável</option>{SOULFORK_ASSIGNEES.map((assignee) => <option value={assignee.id} key={assignee.id}>{assignee.name}</option>)}
