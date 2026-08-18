@@ -2,7 +2,7 @@ export type Priority = 'low' | 'medium' | 'high';
 
 export type Label = { id: string; name: string; color: string };
 
-export type ChecklistItem = { id: string; text: string; done: boolean };
+export type ChecklistItem = { id: string; text: string; done: boolean; assigneeId?: string };
 
 export type QuickCaptureCommands = { labelIds?: string[]; assigneeIds?: string[]; priority?: Priority; dueDate?: string };
 

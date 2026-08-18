@@ -24,11 +24,12 @@ import { getAssigneeColors, SOULFORK_ASSIGNEES, toggleAssignee } from './domain/
 import { buildNotifications } from './domain/notifications';
 import { getCardAttention } from './domain/cardAttention';
 import { parseQuickCapture } from './domain/quickCapture';
-import { applyCardTemplate } from './domain/cardTemplates';
+import { applyCardTemplate, cardToTemplate } from './domain/cardTemplates';
 import NotificationCenter from './components/NotificationCenter';
 import MyTasksView from './components/MyTasksView';
 import DashboardOverview from './components/DashboardOverview';
 import CardTemplatePanel from './components/CardTemplatePanel';
+import CardModalV2 from './components/CardModal';
 import './styles/dragDrop.css';
 
 export { default as InboxPanel } from './components/InboxPanel';
@@ -140,7 +141,7 @@ export default function App() {
         {activeView === 'minutes' && <MeetingMinutes minutes={meetingMinutes} canDelete={members.find((member) => member.userId === session?.user.id)?.role === 'admin'} onDelete={async (minuteId) => { const config = getSupabaseConfig(); if (!config || !session) throw new Error('Sessão não disponível.'); await deleteMeetingMinuteRemote(minuteId, session, fetch, config); deleteLocalMeetingMinute(minuteId); notify('Ata excluída do workspace.'); }} />}
       </section>
     </main>}
-    {cardEditor && <CardModal card={cardEditor.card} columns={board.columnIds.map((id) => board.columns[id]).filter((column): column is Column => Boolean(column))} labels={state.labels} onClose={() => setCardEditor(null)} onSave={saveCard} onDelete={() => { dispatch({ type: 'deleteCard', cardId: cardEditor.card.id }); setCardEditor(null); notify('Card excluído'); }} onDuplicate={() => { dispatch({ type: 'duplicateCard', cardId: cardEditor.card.id }); setCardEditor(null); notify('Card duplicado'); }} />}
+    {cardEditor && <CardModalV2 card={cardEditor.card} columns={board.columnIds.map((id) => board.columns[id]).filter((column): column is Column => Boolean(column))} labels={state.labels} templates={state.cardTemplates ?? []} onApplyTemplate={(template) => setCardEditor({ card: applyCardTemplate(template, cardEditor.card.columnId), isNew: true })} onSaveTemplate={(templateCard, name, recurrence) => { const template = cardToTemplate(templateCard, name, recurrence); dispatch({ type: 'createCardTemplate', template }); notify('Modelo salvo'); }} onClose={() => setCardEditor(null)} onSave={saveCard} onDelete={() => { dispatch({ type: 'deleteCard', cardId: cardEditor.card.id }); setCardEditor(null); notify('Card excluído'); }} onDuplicate={() => { dispatch({ type: 'duplicateCard', cardId: cardEditor.card.id }); setCardEditor(null); notify('Card duplicado'); }} />}
     {columnEditor && <ColumnModal column={columnEditor} exists={Boolean(board.columns[columnEditor.id])} onClose={() => setColumnEditor(null)} onSave={(column) => { dispatch({ type: board.columns[column.id] ? 'updateColumn' : 'createColumn', column }); setColumnEditor(null); notify('Coluna salva'); }} onDelete={() => { dispatch({ type: 'deleteColumn', columnId: columnEditor.id }); setColumnEditor(null); notify('Coluna arquivada'); }} />}
     {settingsOpen && session && <ProfileSettings profile={profile} onClose={() => setSettingsOpen(false)} onSaveProfile={(nextProfile) => { saveUserProfile(nextProfile); setProfile(nextProfile); notify('Perfil atualizado'); }} onSavePassword={(password) => updateSupabasePassword(session, password)} />}
     {!session && <AuthPanel onAuthenticated={(nextSession) => { saveSupabaseSession(nextSession); setSession(nextSession); }} />}
