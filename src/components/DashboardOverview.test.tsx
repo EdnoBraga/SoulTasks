@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import DashboardOverview from './DashboardOverview';
 import type { Board } from '../domain/types';
 
@@ -8,6 +8,7 @@ const board: Board = { id: 'site', name: 'Site', description: '', columnIds: ['t
 describe('DashboardOverview', () => {
   it('exibe carga por pessoa, atrasos e progresso do departamento', () => {
     render(<DashboardOverview boards={[board]} />);
+    fireEvent.click(screen.getByRole('button', { name: /painel inicial visão da operação/i }));
     expect(screen.getByText('Carga da equipe')).toBeTruthy();
     expect(screen.getByText('Braga')).toBeTruthy();
     expect(screen.getAllByText('1 tarefa')).toHaveLength(2);
