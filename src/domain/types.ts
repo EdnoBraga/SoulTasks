@@ -49,6 +49,7 @@ export type BoardState = {
 
 export type BoardAction =
   | { type: 'replaceState'; state: BoardState }
+  | { type: 'switchBoard'; boardId: string }
   | { type: 'createCard'; card: Card }
   | { type: 'updateCard'; card: Card }
   | { type: 'deleteCard'; cardId: string }

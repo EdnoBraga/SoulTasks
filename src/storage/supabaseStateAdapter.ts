@@ -61,11 +61,21 @@ export async function refreshSupabaseSession(session: SupabaseSession, fetcher: 
   return await response.json() as SupabaseSession;
 }
 
+export async function updateSupabasePassword(session: SupabaseSession, password: string, fetcher: Fetcher = fetch) {
+  const config = getSupabaseConfig();
+  if (!config) throw new Error('Supabase não configurado.');
+  const response = await fetcher(`${config.url}/auth/v1/user`, { method: 'PUT', headers: { apikey: config.key, Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) });
+  if (!response.ok) throw new Error('Não foi possível alterar a senha.');
+}
+
 export function createSupabaseStateAdapter(session: SupabaseSession, workspaceId: string, fetcher: Fetcher = fetch, configured?: SupabaseConfig) {
   const config = configured ?? getSupabaseConfig();
   if (!config) throw new Error('Supabase não configurado.');
   const headers = { apikey: config.key, Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' };
-  const endpoint = `${config.url}/rest/v1/board_snapshots`;
+  // O quadro pertence ao workspace compartilhado. A tabela legada
+  // `board_snapshots` usa `user_id` e não aceita os filtros/colunas de
+  // workspace usados pelo app.
+  const endpoint = `${config.url}/rest/v1/workspace_board_snapshots`;
   return {
     async load(): Promise<BoardState | null> {
       const response = await fetcher(`${endpoint}?select=state&workspace_id=eq.${encodeURIComponent(workspaceId)}&limit=1`, { headers });
