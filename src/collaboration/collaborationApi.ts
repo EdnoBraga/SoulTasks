@@ -76,12 +76,19 @@ export async function loadWorkspaceContext(session: SupabaseSession, fetcher: Fe
 export async function inviteWorkspaceMember(email: string, displayName: string, session: SupabaseSession, fetcher: Fetcher = fetch, configured?: SupabaseConfig) {
   const config = resolveConfig(configured);
   if (!email.trim() || !displayName.trim()) throw new Error('Informe nome e e-mail do membro.');
-  const response = await fetcher(`${config.url}/functions/v1/invite-workspace-member`, { method: 'POST', headers: { ...requestHeaders(session), apikey: config.key }, body: JSON.stringify({ email: email.trim().toLowerCase(), displayName: displayName.trim() }) });
+  let response: Response;
+  try {
+    response = await fetcher(`${config.url}/functions/v1/invite-workspace-member`, { method: 'POST', headers: { ...requestHeaders(session), apikey: config.key }, body: JSON.stringify({ email: email.trim().toLowerCase(), displayName: displayName.trim() }) });
+  } catch {
+    throw new Error('Não foi possível conectar ao serviço de convites. Verifique se a função está publicada no Supabase.');
+  }
   if (!response.ok) {
-    let detail = '';
-    try { const body = await response.json() as { error?: string; message?: string }; detail = body.error || body.message || ''; } catch { /* resposta sem JSON */ }
+    let detail = ''; let code = '';
+    try { const body = await response.json() as { error?: string; message?: string; code?: string }; detail = body.error || body.message || ''; code = body.code || ''; } catch { /* resposta sem JSON */ }
     if (response.status === 403) throw new Error(detail || 'Somente o administrador pode convidar membros.');
     if (response.status === 404) throw new Error('O serviço de convites ainda não está publicado no Supabase.');
+    if (response.status === 409 || code === 'already_registered') throw new Error(detail || 'Este e-mail já possui uma conta no Supabase.');
+    if (response.status === 503 || code === 'email_provider_not_configured') throw new Error(detail || 'O envio de e-mail do Supabase ainda não está configurado.');
     throw new Error(detail || `Falha ao enviar convite (${response.status}).`);
   }
   return { invited: true };

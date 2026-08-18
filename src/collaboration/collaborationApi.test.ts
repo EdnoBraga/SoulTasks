@@ -48,6 +48,18 @@ describe('collaboration API', () => {
     await expect(inviteWorkspaceMember('Pallus@Example.com', 'Pallus', session, fetcher as typeof fetch, config)).rejects.toThrow('SMTP não configurado.');
   });
 
+  it('gives an actionable message when the invite function cannot be reached', async () => {
+    const fetcher = async () => { throw new TypeError('Failed to fetch'); };
+    await expect(inviteWorkspaceMember('Pallus@Example.com', 'Pallus', session, fetcher as typeof fetch, config)).rejects.toThrow('serviço de convites');
+  });
+
+  it('classifies provider and duplicate-email failures from the function', async () => {
+    const providerFetcher = async () => new Response(JSON.stringify({ code: 'email_provider_not_configured' }), { status: 503 });
+    const duplicateFetcher = async () => new Response(JSON.stringify({ code: 'already_registered' }), { status: 409 });
+    await expect(inviteWorkspaceMember('Pallus@Example.com', 'Pallus', session, providerFetcher as typeof fetch, config)).rejects.toThrow('envio de e-mail');
+    await expect(inviteWorkspaceMember('Pallus@Example.com', 'Pallus', session, duplicateFetcher as typeof fetch, config)).rejects.toThrow('já possui uma conta');
+  });
+
   it('updates a member permission through the authenticated API', async () => {
     let body = '';
     const fetcher = async (_input: RequestInfo | URL, init?: RequestInit) => { body = String(init?.body); return new Response('{}', { status: 200 }); };

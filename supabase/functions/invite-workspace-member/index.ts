@@ -12,6 +12,7 @@ Deno.serve(async (request) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const publishableKey = Deno.env.get('SUPABASE_ANON_KEY') ?? Deno.env.get('SUPABASE_PUBLISHABLE_KEY') ?? '';
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    if (!supabaseUrl || !publishableKey || !serviceRoleKey) return json({ code: 'function_not_configured', error: 'O serviço de convites não está configurado no Supabase.' }, 503);
     const publicClient = createClient(supabaseUrl, publishableKey);
     const adminClient = createClient(supabaseUrl, serviceRoleKey, { auth: { autoRefreshToken: false, persistSession: false } });
     const { data: { user }, error: userError } = await publicClient.auth.getUser(token);
@@ -24,7 +25,13 @@ Deno.serve(async (request) => {
     if (!/^\S+@\S+\.\S+$/.test(email) || !displayName) return json({ error: 'Nome e e-mail válidos são obrigatórios.' }, 400);
     const redirectTo = Deno.env.get('INVITE_REDIRECT_URL') ?? 'https://tasks.soulfork.com.br';
     const { data: invitation, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, { redirectTo, data: { display_name: displayName } });
-    if (inviteError || !invitation.user) return json({ error: inviteError?.message ?? 'Não foi possível enviar o convite.' }, 400);
+    if (inviteError || !invitation.user) {
+      const message = inviteError?.message ?? 'Não foi possível enviar o convite.';
+      const normalized = message.toLowerCase();
+      if (normalized.includes('already') || normalized.includes('registered') || normalized.includes('exists')) return json({ code: 'already_registered', error: 'Este e-mail já possui uma conta no Supabase.' }, 409);
+      if (normalized.includes('smtp') || normalized.includes('email provider') || normalized.includes('mail')) return json({ code: 'email_provider_not_configured', error: 'O envio de e-mail do Supabase ainda não está configurado.' }, 503);
+      return json({ code: 'invite_failed', error: message }, 400);
+    }
     const { error: memberError } = await adminClient.from('workspace_members').upsert({ workspace_id: workspaceId, user_id: invitation.user.id, email, display_name: displayName, role: 'member', status: 'active' }, { onConflict: 'workspace_id,user_id' });
     if (memberError) return json({ error: 'Convite enviado, mas não foi possível registrar o membro.' }, 500);
     return json({ invited: true });
