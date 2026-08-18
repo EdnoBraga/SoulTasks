@@ -41,10 +41,12 @@ export default function BoardNavigation() {
     window.dispatchEvent(new CustomEvent<QuickFilters>('soultasks:quick-filters', { detail: next }));
   };
   const resetFilters = () => { setFilters(EMPTY_FILTERS); window.dispatchEvent(new CustomEvent<QuickFilters>('soultasks:quick-filters', { detail: EMPTY_FILTERS })); };
+  const applySavedFilter = (name: 'mine' | 'overdue' | 'week') => { const next = name === 'mine' ? { ...EMPTY_FILTERS, assigneeId: 'braga' } : name === 'overdue' ? { ...EMPTY_FILTERS, due: 'overdue' as const } : { ...EMPTY_FILTERS, due: 'week' as const }; setFilters(next); window.dispatchEvent(new CustomEvent<QuickFilters>('soultasks:quick-filters', { detail: next })); };
   const hasFilters = Object.values(filters).some((value) => value !== 'all');
 
   return <div className="board-navigation" aria-label="Filtros rápidos e navegação do quadro">
     <div className="quick-filter-title"><Filter size={14} /><span>Filtros rápidos</span></div>
+    <button className="saved-filter" onClick={() => applySavedFilter('mine')}>Minhas tarefas</button><button className="saved-filter" onClick={() => applySavedFilter('overdue')}>Atrasadas</button><button className="saved-filter" onClick={() => applySavedFilter('week')}>Esta semana</button>
     <select value={filters.assigneeId} onChange={(event) => updateFilter('assigneeId', event.target.value)} aria-label="Filtrar por responsável">
       <option value="all">Responsável: todos</option><option value="unassigned">Sem responsável</option>{SOULFORK_ASSIGNEES.map((assignee) => <option value={assignee.id} key={assignee.id}>{assignee.name}</option>)}
     </select>
