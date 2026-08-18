@@ -1,4 +1,5 @@
 import type { BoardState } from '../domain/types';
+import { normalizeBoardState } from '../domain/stateNormalization';
 
 export type SupabaseSession = {
   access_token: string;
@@ -99,7 +100,7 @@ export function createSupabaseStateAdapter(session: SupabaseSession, workspaceId
       const response = await fetcher(`${endpoint}?select=state&workspace_id=eq.${encodeURIComponent(workspaceId)}&limit=1`, { headers });
       if (!response.ok) throw new Error(`Falha ao carregar o quadro (${response.status}).`);
       const rows = await response.json() as { state: BoardState }[];
-      return rows[0]?.state ?? null;
+      return rows[0]?.state ? normalizeBoardState(rows[0].state) : null;
     },
     async save(state: BoardState) {
       const response = await fetcher(endpoint, {
