@@ -19,6 +19,8 @@ describe('BoardZoomControl', () => {
 
     expect(canvas.contains(screen.getByText('88%'))).toBe(true);
     expect(columns.style.zoom).toBe('0.88');
+    expect(canvas.style.zoom).toBeFalsy();
+    expect(document.body.style.zoom).toBeFalsy();
     expect(screen.getByText(/shift \+ rolagem/i)).toBeTruthy();
     canvas.remove();
   });
