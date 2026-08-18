@@ -8,6 +8,19 @@ export type QuickCaptureCommands = { labelIds?: string[]; assigneeIds?: string[]
 
 export type CardHistoryEntry = { id: string; author: string; summary: string; createdAt: string };
 
+export type CardTemplateRecurrence = 'none' | 'weekly' | 'monthly';
+
+export type CardTemplate = {
+  id: string;
+  name: string;
+  description: string;
+  priority: Priority;
+  labelIds: string[];
+  assigneeIds: string[];
+  checklist: ChecklistItem[];
+  recurrence: CardTemplateRecurrence;
+};
+
 export type Card = {
   id: string;
   columnId: string;
@@ -50,6 +63,7 @@ export type BoardState = {
   activeBoardId: string;
   inbox: InboxItem[];
   labels: Label[];
+  cardTemplates?: CardTemplate[];
 };
 
 export type BoardAction =
@@ -64,6 +78,8 @@ export type BoardAction =
   | { type: 'deleteColumn'; columnId: string }
   | { type: 'moveColumn'; columnId: string; direction: 'left' | 'right' }
   | { type: 'duplicateCard'; cardId: string }
+  | { type: 'createCardTemplate'; template: CardTemplate }
+  | { type: 'deleteCardTemplate'; templateId: string }
   | { type: 'captureInbox'; item: InboxItem }
   | { type: 'updateInbox'; item: InboxItem }
   | { type: 'deleteInbox'; itemId: string }
