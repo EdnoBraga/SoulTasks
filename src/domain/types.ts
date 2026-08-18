@@ -4,6 +4,8 @@ export type Label = { id: string; name: string; color: string };
 
 export type ChecklistItem = { id: string; text: string; done: boolean };
 
+export type QuickCaptureCommands = { labelIds?: string[]; assigneeIds?: string[]; priority?: Priority; dueDate?: string };
+
 export type CardHistoryEntry = { id: string; author: string; summary: string; createdAt: string };
 
 export type Card = {
@@ -41,7 +43,7 @@ export type Board = {
   cards: Record<string, Card>;
 };
 
-export type InboxItem = { id: string; title: string; description: string; createdAt: string };
+export type InboxItem = { id: string; title: string; description: string; createdAt: string; quickCommands?: QuickCaptureCommands };
 
 export type BoardState = {
   boards: Record<string, Board>;
