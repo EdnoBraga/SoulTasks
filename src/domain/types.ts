@@ -60,4 +60,6 @@ export type BoardAction =
   | { type: 'moveColumn'; columnId: string; direction: 'left' | 'right' }
   | { type: 'duplicateCard'; cardId: string }
   | { type: 'captureInbox'; item: InboxItem }
+  | { type: 'updateInbox'; item: InboxItem }
+  | { type: 'deleteInbox'; itemId: string }
   | { type: 'promoteInbox'; itemId: string; card: Card };

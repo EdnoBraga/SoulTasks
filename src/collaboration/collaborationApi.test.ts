@@ -42,4 +42,9 @@ describe('collaboration API', () => {
     await expect(inviteWorkspaceMember('Pallus@Example.com', 'Pallus', session, fetcher as typeof fetch, config)).resolves.toEqual({ invited: true });
     expect(JSON.parse(body)).toEqual({ email: 'pallus@example.com', displayName: 'Pallus' });
   });
+
+  it('exposes the Edge Function error when an invitation fails', async () => {
+    const fetcher = async () => new Response(JSON.stringify({ error: 'SMTP não configurado.' }), { status: 400 });
+    await expect(inviteWorkspaceMember('Pallus@Example.com', 'Pallus', session, fetcher as typeof fetch, config)).rejects.toThrow('SMTP não configurado.');
+  });
 });

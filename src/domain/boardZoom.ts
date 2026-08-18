@@ -1,7 +1,9 @@
-export const BOARD_ZOOM_LEVELS = [80, 90, 100] as const;
-export type BoardZoom = (typeof BOARD_ZOOM_LEVELS)[number];
+export const BOARD_ZOOM_MIN = 80;
+export const BOARD_ZOOM_MAX = 100;
+export type BoardZoom = number;
 
 export function normalizeBoardZoom(value: string | null): BoardZoom {
+  if (value === null) return BOARD_ZOOM_MAX;
   const parsed = Number(value);
-  return BOARD_ZOOM_LEVELS.includes(parsed as BoardZoom) ? parsed as BoardZoom : 100;
+  return Number.isFinite(parsed) ? Math.min(BOARD_ZOOM_MAX, Math.max(BOARD_ZOOM_MIN, parsed)) : BOARD_ZOOM_MAX;
 }
