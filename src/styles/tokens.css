@@ -50,6 +50,25 @@
   --sf-transition-base: 220ms ease;
 }
 
+:root[data-theme='light'] {
+  color-scheme: light;
+  --sf-color-bg: #f3f6fc;
+  --sf-color-surface: #ffffff;
+  --sf-color-surface-2: #e9eef8;
+  --sf-color-border: rgba(58, 76, 116, 0.18);
+  --sf-color-border-strong: rgba(58, 76, 116, 0.34);
+  --sf-color-text: #17213d;
+  --sf-color-text-muted: #52618b;
+  --sf-color-text-soft: rgba(23, 33, 61, 0.72);
+  --sf-color-primary: #315fd4;
+  --sf-color-primary-hover: #244cad;
+  --sf-color-accent-cyan: #087eaa;
+  --sf-color-accent-sky: #287aa1;
+  --sf-color-accent-violet: #6840c7;
+  --sf-color-accent-lilac: #7351c2;
+  --sf-color-accent-lime: #4f8614;
+}
+
 @media (prefers-reduced-motion: reduce) {
   :root {
     --sf-transition-fast: 0ms linear;

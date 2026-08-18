@@ -29,4 +29,13 @@ describe('BoardNavigation', () => {
     expect(events.at(-1)?.detail).toMatchObject({ assigneeId: 'all', due: 'week' });
     window.removeEventListener('soultasks:quick-filters', listener);
   });
+
+  it('alterna e persiste o tema visual', () => {
+    localStorage.removeItem('soultasks-theme-v1');
+    render(<BoardNavigation />);
+    const toggle = screen.getByRole('button', { name: 'Ativar modo claro' });
+    fireEvent.click(toggle);
+    expect(localStorage.getItem('soultasks-theme-v1')).toBe('light');
+    expect(document.documentElement.dataset.theme).toBe('light');
+  });
 });
