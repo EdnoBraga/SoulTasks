@@ -8,3 +8,17 @@
   font: 700 .67rem var(--sf-font-mono);
   text-align: center;
 }
+.saved-filter {
+  padding: 6px 8px;
+  border: 1px solid rgba(99, 217, 255, .2);
+  border-radius: 7px;
+  background: rgba(91, 140, 255, .1);
+  color: var(--sf-color-text-muted);
+  font: 700 .64rem var(--sf-font-body);
+  white-space: nowrap;
+}
+
+.saved-filter:hover {
+  border-color: var(--sf-color-accent-cyan);
+  color: var(--sf-color-text);
+}
