@@ -8,12 +8,9 @@ import { createSupabaseStateAdapter, getSupabaseConfig, loadSupabaseSession, ref
 import { inviteWorkspaceMember, loadWorkspaceContext, SOULFORK_WORKSPACE_ID, listMessages, sendMessage } from './collaboration/collaborationApi';
 import type { ChatChannel, ChatMessage, PresenceStatus, WorkspaceMember } from './collaboration/types';
 import { subscribeToMessages, subscribeToWorkspacePresence, type PresenceEntry } from './collaboration/realtime';
-import WorkspaceMembers from './components/WorkspaceMembers';
-import ChatPanel from './components/ChatPanel';
 import VoiceInput from './components/VoiceInput';
 import InboxPanelView from './components/InboxPanel';
 import BoardNavigation from './components/BoardNavigation';
-import CallRoom from './components/CallRoom';
 import TeamOverview from './components/TeamOverview';
 import MeetingMinutes from './components/MeetingMinutes';
 import { deleteMeetingMinute as deleteLocalMeetingMinute, loadMeetingMinutes, type MeetingMinute } from './collaboration/meetingMinutes';
@@ -46,6 +43,7 @@ export default function App() {
   const [meetingMinutes, setMeetingMinutes] = useState<MeetingMinute[]>(() => loadMeetingMinutes());
   const [profile, setProfile] = useState<UserProfile>(() => loadUserProfile()); const [settingsOpen, setSettingsOpen] = useState(false);
   useEffect(() => { const refreshMinutes = () => setMeetingMinutes(loadMeetingMinutes()); window.addEventListener('soultasks:minutes-updated', refreshMinutes); return () => window.removeEventListener('soultasks:minutes-updated', refreshMinutes); }, []);
+  useEffect(() => { const openChat = () => setChatOpen(true); window.addEventListener('soultasks:open-chat', openChat); return () => window.removeEventListener('soultasks:open-chat', openChat); }, []);
   useEffect(() => { const config = getSupabaseConfig(); if (!session || !workspaceReady || workspaceError || !config) return; void (async () => { const remoteMinutes = await listMeetingMinutes(SOULFORK_WORKSPACE_ID, session, fetch, config); if (remoteMinutes.length === 0) { const cachedMinutes = loadMeetingMinutes(); await Promise.all(cachedMinutes.map((minute) => saveMeetingMinuteRemote(SOULFORK_WORKSPACE_ID, minute, session, fetch, config))); setMeetingMinutes(cachedMinutes); } else setMeetingMinutes(remoteMinutes); })().catch(() => undefined); }, [session, workspaceReady, workspaceError]);
   const [cardEditor, setCardEditor] = useState<{ card: Card; isNew: boolean } | null>(null); const [columnEditor, setColumnEditor] = useState<Column | null>(null); const [toast, setToast] = useState('');
   const board = state.activeBoardId === 'main' ? buildGeneralBoard(state) : state.boards[state.activeBoardId]!;
@@ -121,7 +119,6 @@ export default function App() {
         {activeView === 'minutes' && <MeetingMinutes minutes={meetingMinutes} canDelete={members.find((member) => member.userId === session?.user.id)?.role === 'admin'} onDelete={async (minuteId) => { const config = getSupabaseConfig(); if (!config || !session) throw new Error('Sessão não disponível.'); await deleteMeetingMinuteRemote(minuteId, session, fetch, config); deleteLocalMeetingMinute(minuteId); notify('Ata excluída do workspace.'); }} />}
       </section>
     </main>}
-    {showDashboard && session && members.length > 0 && <div className="collaboration-strip legacy-collaboration"><WorkspaceMembers members={members} presence={presence} isAdmin={members.find((member) => member.userId === session.user.id)?.role === 'admin'} onInvite={async (email, displayName) => { try { await inviteWorkspaceMember(email, displayName, session, fetch, getSupabaseConfig() ?? undefined); notify('Convite enviado por e-mail.'); } catch (error: unknown) { notify(error instanceof Error ? error.message : 'Falha ao enviar convite.'); throw error; } }} /><CallRoom session={session} config={getSupabaseConfig()!} members={members} onNotify={notify} />{chatOpen && <ChatPanel channels={channels} messages={messages} activeChannelId={activeChannelId} currentUserId={session.user.id} onSelectChannel={setActiveChannelId} onSend={(content) => { if (!activeChannelId) return; void sendMessage(activeChannelId, content, session, fetch, getSupabaseConfig() ?? undefined).then((message) => setMessages((current) => current.some((item) => item.id === message.id) ? current : [...current, message])).catch((error: unknown) => notify(error instanceof Error ? error.message : 'Falha ao enviar mensagem.')); }} onClose={() => setChatOpen(false)} />}</div>}
     {cardEditor && <CardModal card={cardEditor.card} columns={board.columnIds.map((id) => board.columns[id]).filter((column): column is Column => Boolean(column))} labels={state.labels} onClose={() => setCardEditor(null)} onSave={saveCard} onDelete={() => { dispatch({ type: 'deleteCard', cardId: cardEditor.card.id }); setCardEditor(null); notify('Card excluído'); }} onDuplicate={() => { dispatch({ type: 'duplicateCard', cardId: cardEditor.card.id }); setCardEditor(null); notify('Card duplicado'); }} />}
     {columnEditor && <ColumnModal column={columnEditor} exists={Boolean(board.columns[columnEditor.id])} onClose={() => setColumnEditor(null)} onSave={(column) => { dispatch({ type: board.columns[column.id] ? 'updateColumn' : 'createColumn', column }); setColumnEditor(null); notify('Coluna salva'); }} onDelete={() => { dispatch({ type: 'deleteColumn', columnId: columnEditor.id }); setColumnEditor(null); notify('Coluna arquivada'); }} />}
     {settingsOpen && session && <ProfileSettings profile={profile} onClose={() => setSettingsOpen(false)} onSaveProfile={(nextProfile) => { saveUserProfile(nextProfile); setProfile(nextProfile); notify('Perfil atualizado'); }} onSavePassword={(password) => updateSupabasePassword(session, password)} />}
