@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { inviteWorkspaceMember, listChannels, listMessages, listWorkspaceMembers, sendMessage, updateMemberPermission } from './collaborationApi';
+import { inviteWorkspaceMember, listChannels, listMessages, listPresenceSessions, listWorkspaceMembers, recordPresenceSession, sendMessage, updateMemberPermission } from './collaborationApi';
 import type { SupabaseSession } from '../storage/supabaseStateAdapter';
 
 const session: SupabaseSession = { access_token: 'token', user: { id: 'user-1' } };
@@ -53,5 +53,14 @@ describe('collaboration API', () => {
     const fetcher = async (_input: RequestInfo | URL, init?: RequestInit) => { body = String(init?.body); return new Response('{}', { status: 200 }); };
     await expect(updateMemberPermission('member-2', 'commenter', session, fetcher as typeof fetch, config)).resolves.toBeUndefined();
     expect(body).toBe('{"permission":"commenter"}');
+  });
+
+  it('records and lists presence sessions', async () => {
+    const requests: string[] = [];
+    const fetcher = async (input: RequestInfo | URL) => { requests.push(String(input)); return new Response('[]', { status: 200 }); };
+    await recordPresenceSession('session-1', 'workspace-1', '2026-08-18T09:00:00Z', null, session, fetcher as typeof fetch, config);
+    await listPresenceSessions('workspace-1', session, fetcher as typeof fetch, config);
+    expect(requests[0]).toContain('/rest/v1/presence_sessions');
+    expect(requests[1]).toContain('workspace_id=eq.workspace-1');
   });
 });
