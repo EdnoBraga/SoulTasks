@@ -4,7 +4,7 @@ import type { ChatChannel, ChatMessage, WorkspaceMember } from './types';
 export const SOULFORK_WORKSPACE_ID = '00000000-0000-0000-0000-000000000001';
 
 type Fetcher = typeof fetch;
-type MemberRow = { id: string; user_id: string; workspace_id: string; role: WorkspaceMember['role']; display_name: string; email?: string; status: WorkspaceMember['status'] };
+type MemberRow = { id: string; user_id: string; workspace_id: string; role: WorkspaceMember['role']; permission?: WorkspaceMember['permission']; display_name: string; email?: string; status: WorkspaceMember['status'] };
 type ChannelRow = { id: string; workspace_id: string; kind: ChatChannel['kind']; name: string; created_at: string };
 type MessageRow = { id: string; channel_id: string; author_id: string; content: string; created_at: string; updated_at?: string };
 
@@ -19,8 +19,14 @@ async function read<T>(url: string, session: SupabaseSession, fetcher: Fetcher, 
 
 export async function listWorkspaceMembers(workspaceId: string, session: SupabaseSession, fetcher: Fetcher = fetch, configured?: SupabaseConfig) {
   const config = resolveConfig(configured);
-  const rows = await read<MemberRow>(endpoint(config, 'workspace_members', `select=id,user_id,workspace_id,role,display_name,email,status&workspace_id=eq.${encodeURIComponent(workspaceId)}&status=eq.active&order=display_name.asc`), session, fetcher, config);
-  return rows.map((row) => ({ id: row.id, userId: row.user_id, workspaceId: row.workspace_id, role: row.role, displayName: row.display_name, email: row.email, status: row.status }));
+  const rows = await read<MemberRow>(endpoint(config, 'workspace_members', `select=id,user_id,workspace_id,role,permission,display_name,email,status&workspace_id=eq.${encodeURIComponent(workspaceId)}&status=eq.active&order=display_name.asc`), session, fetcher, config);
+  return rows.map((row) => ({ id: row.id, userId: row.user_id, workspaceId: row.workspace_id, role: row.role, permission: row.permission ?? (row.role === 'admin' ? 'admin' : 'editor'), displayName: row.display_name, email: row.email, status: row.status }));
+}
+
+export async function updateMemberPermission(memberId: string, permission: NonNullable<WorkspaceMember['permission']>, session: SupabaseSession, fetcher: Fetcher = fetch, configured?: SupabaseConfig) {
+  const config = resolveConfig(configured);
+  const response = await fetcher(`${config.url}/rest/v1/workspace_members?id=eq.${encodeURIComponent(memberId)}`, { method: 'PATCH', headers: { ...requestHeaders(session), apikey: config.key, Prefer: 'return=minimal' }, body: JSON.stringify({ permission }) });
+  if (!response.ok) throw new Error(`Falha ao atualizar permissão (${response.status}).`);
 }
 
 export async function listChannels(workspaceId: string, session: SupabaseSession, fetcher: Fetcher = fetch, configured?: SupabaseConfig) {
