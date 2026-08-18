@@ -6,6 +6,8 @@ export type ChecklistItem = { id: string; text: string; done: boolean; assigneeI
 
 export type QuickCaptureCommands = { labelIds?: string[]; assigneeIds?: string[]; priority?: Priority; dueDate?: string };
 
+export type CardAttachment = { id: string; name: string; type: string; size: number; dataUrl: string; createdAt: string };
+
 export type CardHistoryEntry = { id: string; author: string; summary: string; createdAt: string };
 
 export type CardTemplateRecurrence = 'none' | 'weekly' | 'monthly';
@@ -32,6 +34,7 @@ export type Card = {
   dueDate?: string;
   checklist: ChecklistItem[];
   comments: string[];
+  attachments?: CardAttachment[];
   createdAt: string;
   history?: CardHistoryEntry[];
 };
