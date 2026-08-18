@@ -1,0 +1,9 @@
+import { CalendarDays, CheckCircle2, ChevronRight } from 'lucide-react';
+import type { Board, Card } from '../domain/types';
+
+type MyTasksViewProps = { boards: Board[]; assigneeId: string; onOpenCard: (card: Card, board: Board) => void };
+
+export default function MyTasksView({ boards, assigneeId, onOpenCard }: MyTasksViewProps) {
+  const cards = boards.flatMap((board) => Object.values(board.cards).map((card) => ({ card, board }))).filter(({ card }) => card.assigneeIds.includes(assigneeId)).filter(({ card }, index, all) => all.findIndex((item) => item.card.id === card.id) === index).sort((a, b) => (a.card.dueDate ?? '9999-12-31').localeCompare(b.card.dueDate ?? '9999-12-31'));
+  return <div className="view-panel my-tasks-view"><div className="view-heading"><div><div className="section-kicker">visão pessoal</div><h1>Minhas tarefas</h1><p>Cards atribuídos a você em todos os workflows.</p></div><span className="view-count">{cards.length} tarefas</span></div>{cards.length ? <div className="my-tasks-list">{cards.map(({ card, board }) => <button className="my-task-item" key={card.id} onClick={() => onOpenCard(card, board)}><span className="my-task-status"><CheckCircle2 size={17} /></span><span className="my-task-copy"><strong>{card.title}</strong><small>{board.name} · Prioridade {card.priority === 'high' ? 'alta' : card.priority === 'medium' ? 'média' : 'baixa'}</small></span>{card.dueDate && <span className="my-task-due"><CalendarDays size={14} /> {new Date(`${card.dueDate}T12:00:00`).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '')}</span>}<ChevronRight size={16} /></button>)}</div> : <div className="empty-view"><CheckCircle2 size={22} /><h2>Nenhuma tarefa atribuída</h2><p>Quando um card for atribuído a você, ele aparecerá nesta visão.</p></div>}</div>;
+}
