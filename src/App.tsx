@@ -29,7 +29,7 @@ import NotificationCenter from './components/NotificationCenter';
 import MyTasksView from './components/MyTasksView';
 import DashboardOverview from './components/DashboardOverview';
 import CardTemplatePanel from './components/CardTemplatePanel';
-import CardModalV2 from './components/CardModal';
+import CardModalV2 from './components/CardModalWithMentions';
 import CalendarWorkspace from './components/CalendarWorkspace';
 import './styles/dragDrop.css';
 
