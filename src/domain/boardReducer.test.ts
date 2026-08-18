@@ -19,4 +19,11 @@ describe('boardReducer', () => {
     expect(captured.boards.main!.columns.todo!.name).toBe('Próximos passos');
     expect(captured.inbox[0]!.title).toBe('Nova ideia');
   });
+
+  it('registra autor e horário ao mover um card', () => {
+    const initial = createDemoState();
+    const moved = boardReducer(initial, { type: 'moveCard', cardId: 'card-1', columnId: 'doing', actor: 'Braga' });
+    expect(moved.boards.main!.cards['card-1']!.history?.[0]).toMatchObject({ author: 'Braga', summary: 'moveu o card de coluna' });
+    expect(moved.boards.main!.cards['card-1']!.history?.[0]?.createdAt).toBeTruthy();
+  });
 });
