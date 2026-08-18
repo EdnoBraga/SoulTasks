@@ -25,7 +25,7 @@ Deno.serve(async (request) => {
     const redirectTo = Deno.env.get('INVITE_REDIRECT_URL') ?? 'https://tasks.soulfork.com.br';
     const { data: invitation, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, { redirectTo, data: { display_name: displayName } });
     if (inviteError || !invitation.user) return json({ error: inviteError?.message ?? 'Não foi possível enviar o convite.' }, 400);
-    const { error: memberError } = await adminClient.from('workspace_members').upsert({ workspace_id: workspaceId, user_id: invitation.user.id, email, display_name: displayName, role: 'member', status: 'pending' }, { onConflict: 'workspace_id,user_id' });
+    const { error: memberError } = await adminClient.from('workspace_members').upsert({ workspace_id: workspaceId, user_id: invitation.user.id, email, display_name: displayName, role: 'member', status: 'active' }, { onConflict: 'workspace_id,user_id' });
     if (memberError) return json({ error: 'Convite enviado, mas não foi possível registrar o membro.' }, 500);
     return json({ invited: true });
   } catch (error) {

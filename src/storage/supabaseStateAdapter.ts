@@ -17,8 +17,26 @@ export function getSupabaseConfig() {
   return url && key ? { url: url.replace(/\/$/, ''), key } : null;
 }
 
+function readInviteSessionFromUrl(): SupabaseSession | null {
+  if (typeof window === 'undefined') return null;
+  const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const accessToken = params.get('access_token');
+  if (!accessToken) return null;
+  let user = { id: '', email: undefined as string | undefined };
+  try {
+    const payload = JSON.parse(atob(accessToken.split('.')[1]?.replace(/-/g, '+').replace(/_/g, '/') ?? '')) as { sub?: string; email?: string };
+    user = { id: payload.sub ?? '', email: payload.email };
+  } catch { /* o usuário será validado pelo Supabase na primeira requisição */ }
+  if (!user.id) return null;
+  const session: SupabaseSession = { access_token: accessToken, refresh_token: params.get('refresh_token') ?? undefined, user };
+  window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.search}`);
+  return session;
+}
+
 export function loadSupabaseSession(): SupabaseSession | null {
   try {
+    const inviteSession = readInviteSessionFromUrl();
+    if (inviteSession) { localStorage.setItem(SESSION_KEY, JSON.stringify(inviteSession)); return inviteSession; }
     const raw = localStorage.getItem(SESSION_KEY);
     return raw ? JSON.parse(raw) as SupabaseSession : null;
   } catch { return null; }
