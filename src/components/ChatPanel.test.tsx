@@ -7,6 +7,7 @@ describe('ChatPanel', () => {
     let sent = '';
     render(<ChatPanel channels={[{ id: 'general', workspaceId: 'w', kind: 'general', name: 'Geral', createdAt: '' }]} messages={[]} activeChannelId="general" currentUserId="u1" onSelectChannel={() => undefined} onSend={(value) => { sent = value; }} />);
     expect(screen.getByRole('button', { name: /geral/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /transcrever mensagem com microfone/i })).toBeTruthy();
     const input = screen.getByPlaceholderText(/escreva uma mensagem/i);
     fireEvent.change(input, { target: { value: 'Olá equipe' } });
     act(() => { screen.getByRole('button', { name: /enviar/i }).click(); });
