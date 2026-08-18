@@ -1,5 +1,5 @@
 import type { SupabaseConfig, SupabaseSession } from '../storage/supabaseStateAdapter';
-import type { ChatChannel, ChatMessage, PresenceStatus, WorkspaceMember } from '../collaboration/types';
+import type { ChatChannel, ChatMessage, MemberPermission, PresenceStatus, WorkspaceMember } from '../collaboration/types';
 import WorkspaceMembers from './WorkspaceMembers';
 import ChatPanel from './ChatPanel';
 import CallRoom from './CallRoom';
@@ -11,6 +11,7 @@ type Props = {
   presence: Record<string, PresenceStatus>;
   isAdmin: boolean;
   onInvite: (email: string, displayName: string) => Promise<void>;
+  onUpdatePermission?: (memberId: string, permission: MemberPermission) => Promise<void>;
   onNotify: (message: string) => void;
   chatOpen: boolean;
   channels: ChatChannel[];
@@ -22,6 +23,6 @@ type Props = {
   onOpenChat?: () => void;
 };
 
-export default function TeamOverview({ session, config, members, presence, isAdmin, onInvite, onNotify, chatOpen, channels, messages, activeChannelId, onSelectChannel, onSend, onCloseChat, onOpenChat }: Props) {
-  return <section className="team-overview" aria-label="Equipe e sala de equipe"><WorkspaceMembers members={members} presence={presence} isAdmin={isAdmin} onInvite={onInvite} onOpenChat={onOpenChat} /><CallRoom session={session} config={config} members={members} onNotify={onNotify} />{chatOpen && <ChatPanel channels={channels} messages={messages} activeChannelId={activeChannelId} currentUserId={session.user.id} onSelectChannel={onSelectChannel} onSend={onSend} onClose={onCloseChat} />}</section>;
+export default function TeamOverview({ session, config, members, presence, isAdmin, onInvite, onUpdatePermission, onNotify, chatOpen, channels, messages, activeChannelId, onSelectChannel, onSend, onCloseChat, onOpenChat }: Props) {
+  return <section className="team-overview" aria-label="Equipe e sala de equipe"><WorkspaceMembers members={members} presence={presence} isAdmin={isAdmin} onInvite={onInvite} onUpdatePermission={onUpdatePermission} onOpenChat={onOpenChat} /><CallRoom session={session} config={config} members={members} onNotify={onNotify} />{chatOpen && <ChatPanel channels={channels} messages={messages} activeChannelId={activeChannelId} currentUserId={session.user.id} onSelectChannel={onSelectChannel} onSend={onSend} onClose={onCloseChat} />}</section>;
 }

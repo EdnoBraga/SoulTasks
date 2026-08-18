@@ -1,4 +1,5 @@
 export type MemberRole = 'admin' | 'member';
+export type MemberPermission = 'admin' | 'editor' | 'commenter' | 'viewer';
 export type MemberStatus = 'pending' | 'active' | 'suspended';
 export type PresenceStatus = 'online' | 'away' | 'offline';
 
@@ -7,6 +8,7 @@ export type WorkspaceMember = {
   userId: string;
   workspaceId: string;
   role: MemberRole;
+  permission?: MemberPermission;
   displayName: string;
   email?: string;
   status: MemberStatus;
