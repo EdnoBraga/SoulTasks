@@ -48,6 +48,10 @@ export function boardReducer(state: BoardState, action: BoardAction): BoardState
       const copy = { ...source, id: crypto.randomUUID(), title: `${source.title} (cópia)`, createdAt: new Date().toISOString() };
       return { ...state, boards: { ...state.boards, [board.id]: { ...board, cards: { ...cards, [copy.id]: copy } } } };
     }
+    case 'createCardTemplate':
+      return { ...state, cardTemplates: [...(state.cardTemplates ?? []).filter((template) => template.id !== action.template.id), action.template] };
+    case 'deleteCardTemplate':
+      return { ...state, cardTemplates: (state.cardTemplates ?? []).filter((template) => template.id !== action.templateId) };
     case 'captureInbox': return { ...state, inbox: [action.item, ...state.inbox] };
     case 'updateInbox': return { ...state, inbox: state.inbox.map((item) => item.id === action.item.id ? action.item : item) };
     case 'deleteInbox': return { ...state, inbox: state.inbox.filter((item) => item.id !== action.itemId) };
