@@ -18,3 +18,9 @@ export function getWeekStart(date: Date) {
   start.setDate(start.getDate() - (day === 0 ? 6 : day - 1));
   return start;
 }
+
+export function getMonthDays(date: Date) {
+  const first = new Date(date.getFullYear(), date.getMonth(), 1, 12);
+  const start = getWeekStart(first);
+  return Array.from({ length: 42 }, (_, index) => addDays(start, index));
+}
