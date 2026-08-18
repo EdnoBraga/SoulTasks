@@ -1,7 +1,9 @@
 import type { BoardAction, BoardState } from './types';
+import { ensureWorkflowBoards } from './workflows';
 
 export function boardReducer(state: BoardState, action: BoardAction): BoardState {
-  if (action.type === 'replaceState') return action.state;
+  if (action.type === 'replaceState') return ensureWorkflowBoards(action.state);
+  if (action.type === 'switchBoard') return state.boards[action.boardId] ? { ...state, activeBoardId: action.boardId } : state;
   const board = state.boards[state.activeBoardId];
   if (!board) return state;
   const cards = { ...board.cards };

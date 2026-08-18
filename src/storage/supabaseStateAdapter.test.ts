@@ -12,8 +12,10 @@ const state: BoardState = {
 describe('Supabase state adapter', () => {
   it('loads and saves the authenticated workspace snapshot', async () => {
     let stored: Record<string, unknown> | null = null;
+    const requests: string[] = [];
     const session: SupabaseSession = { access_token: 'token', user: { id: 'user-1' } };
-    const fetcher = async (_input: RequestInfo | URL, init?: RequestInit) => {
+    const fetcher = async (input: RequestInfo | URL, init?: RequestInit) => {
+      requests.push(String(input));
       if (init?.method === 'POST') stored = JSON.parse(String(init.body));
       return new Response(stored ? JSON.stringify([{ state: stored.state }]) : '[]', { status: 200 });
     };
@@ -21,5 +23,6 @@ describe('Supabase state adapter', () => {
     await adapter.save(state);
     expect(await adapter.load()).toEqual(state);
     expect(stored).toMatchObject({ workspace_id: 'workspace-1' });
+    expect(requests.every((request) => request.includes('/rest/v1/workspace_board_snapshots'))).toBe(true);
   });
 });
