@@ -3,6 +3,7 @@ declare module 'lucide-react';
 interface ImportMetaEnv {
   readonly VITE_SUPABASE_URL?: string;
   readonly VITE_SUPABASE_PUBLISHABLE_KEY?: string;
+  readonly VITE_GOOGLE_DRIVE_FOLDER_URL?: string;
 }
 
 interface ImportMeta {
