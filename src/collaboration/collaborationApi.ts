@@ -1,5 +1,6 @@
 import type { SupabaseConfig, SupabaseSession } from '../storage/supabaseStateAdapter';
 import type { ChatChannel, ChatMessage, WorkspaceMember } from './types';
+import type { PresenceSession } from '../domain/presenceDuration';
 
 export const SOULFORK_WORKSPACE_ID = '00000000-0000-0000-0000-000000000001';
 
@@ -27,6 +28,17 @@ export async function updateMemberPermission(memberId: string, permission: NonNu
   const config = resolveConfig(configured);
   const response = await fetcher(`${config.url}/rest/v1/workspace_members?id=eq.${encodeURIComponent(memberId)}`, { method: 'PATCH', headers: { ...requestHeaders(session), apikey: config.key, Prefer: 'return=minimal' }, body: JSON.stringify({ permission }) });
   if (!response.ok) throw new Error(`Falha ao atualizar permissão (${response.status}).`);
+}
+
+export async function recordPresenceSession(sessionId: string, workspaceId: string, startedAt: string, endedAt: string | null, session: SupabaseSession, fetcher: Fetcher = fetch, configured?: SupabaseConfig) {
+  const config = resolveConfig(configured);
+  const response = await fetcher(`${config.url}/rest/v1/presence_sessions`, { method: 'POST', headers: { ...requestHeaders(session), apikey: config.key, Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ id: sessionId, workspace_id: workspaceId, user_id: session.user.id, started_at: startedAt, last_seen_at: new Date().toISOString(), ended_at: endedAt }) });
+  if (!response.ok) throw new Error(`Falha ao registrar presença (${response.status}).`);
+}
+
+export async function listPresenceSessions(workspaceId: string, session: SupabaseSession, fetcher: Fetcher = fetch, configured?: SupabaseConfig) {
+  const config = resolveConfig(configured);
+  return read<PresenceSession & { user_id: string }>(endpoint(config, 'presence_sessions', `select=user_id,started_at,ended_at&workspace_id=eq.${encodeURIComponent(workspaceId)}&order=started_at.desc&limit=500`), session, fetcher, config);
 }
 
 export async function listChannels(workspaceId: string, session: SupabaseSession, fetcher: Fetcher = fetch, configured?: SupabaseConfig) {
