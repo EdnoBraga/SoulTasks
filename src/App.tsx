@@ -25,6 +25,9 @@ export { default as InboxPanel } from './components/InboxPanel';
 const priorityText: Record<Priority, string> = { low: 'Baixa', medium: 'Média', high: 'Alta' };
 const newCard = (columnId: string): Card => ({ id: crypto.randomUUID(), columnId, title: '', description: '', priority: 'medium', labelIds: [], assigneeIds: [], checklist: [], comments: [], createdAt: new Date().toISOString() });
 type AppView = 'board' | 'activity' | 'calendar' | 'minutes';
+type DueFilter = 'all' | 'overdue' | 'today' | 'week' | 'none';
+type QuickFilters = { assigneeId: string; labelId: string; due: DueFilter; priority: Priority | 'all' };
+const EMPTY_QUICK_FILTERS: QuickFilters = { assigneeId: 'all', labelId: 'all', due: 'all', priority: 'all' };
 
 export default function App() {
   const [state, dispatch] = useReducer(boardReducer, undefined, () => ensureWorkflowBoards(loadState() ?? createDemoState()));
@@ -39,11 +42,12 @@ export default function App() {
   const [chatOpen, setChatOpen] = useState(false);
   const [remoteReady, setRemoteReady] = useState(false);
   const [syncError, setSyncError] = useState('');
-  const [query, setQuery] = useState(''); const [filter, setFilter] = useState<Priority | 'all'>('all'); const [activeView, setActiveView] = useState<AppView>('board');
+  const [query, setQuery] = useState(''); const [filter, setFilter] = useState<Priority | 'all'>('all'); const [quickFilters, setQuickFilters] = useState<QuickFilters>(EMPTY_QUICK_FILTERS); const [activeView, setActiveView] = useState<AppView>('board');
   const [meetingMinutes, setMeetingMinutes] = useState<MeetingMinute[]>(() => loadMeetingMinutes());
   const [profile, setProfile] = useState<UserProfile>(() => loadUserProfile()); const [settingsOpen, setSettingsOpen] = useState(false);
   useEffect(() => { const refreshMinutes = () => setMeetingMinutes(loadMeetingMinutes()); window.addEventListener('soultasks:minutes-updated', refreshMinutes); return () => window.removeEventListener('soultasks:minutes-updated', refreshMinutes); }, []);
   useEffect(() => { const openChat = () => setChatOpen(true); window.addEventListener('soultasks:open-chat', openChat); return () => window.removeEventListener('soultasks:open-chat', openChat); }, []);
+  useEffect(() => { const applyQuickFilters = (event: Event) => { const next = (event as CustomEvent<QuickFilters>).detail; if (!next) return; setQuickFilters(next); setFilter(next.priority); }; window.addEventListener('soultasks:quick-filters', applyQuickFilters); return () => window.removeEventListener('soultasks:quick-filters', applyQuickFilters); }, []);
   useEffect(() => { const config = getSupabaseConfig(); if (!session || !workspaceReady || workspaceError || !config) return; void (async () => { const remoteMinutes = await listMeetingMinutes(SOULFORK_WORKSPACE_ID, session, fetch, config); if (remoteMinutes.length === 0) { const cachedMinutes = loadMeetingMinutes(); await Promise.all(cachedMinutes.map((minute) => saveMeetingMinuteRemote(SOULFORK_WORKSPACE_ID, minute, session, fetch, config))); setMeetingMinutes(cachedMinutes); } else setMeetingMinutes(remoteMinutes); })().catch(() => undefined); }, [session, workspaceReady, workspaceError]);
   const [cardEditor, setCardEditor] = useState<{ card: Card; isNew: boolean } | null>(null); const [columnEditor, setColumnEditor] = useState<Column | null>(null); const [toast, setToast] = useState('');
   const board = state.activeBoardId === 'main' ? buildGeneralBoard(state) : state.boards[state.activeBoardId]!;
@@ -99,7 +103,7 @@ export default function App() {
     return () => { cancelled = true; unsubscribe?.(); };
   }, [activeChannelId, session, workspaceReady, workspaceError]);
   useEffect(() => { const handler = (event: KeyboardEvent) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); setCardEditor({ card: newCard(board.columnIds[0]!), isNew: true }); } }; window.addEventListener('keydown', handler); return () => window.removeEventListener('keydown', handler); }, [board.columnIds]);
-  const visibleCards = useMemo(() => Object.values(board.cards).filter((card) => `${card.title} ${card.description}`.toLowerCase().includes(query.toLowerCase()) && (filter === 'all' || card.priority === filter)), [board.cards, filter, query]);
+  const visibleCards = useMemo(() => { const today = new Date(); today.setHours(0, 0, 0, 0); const weekEnd = new Date(today); weekEnd.setDate(today.getDate() + 7); return Object.values(board.cards).filter((card) => { const due = card.dueDate ? new Date(`${card.dueDate}T00:00:00`) : undefined; const dueMatches = quickFilters.due === 'all' || (quickFilters.due === 'none' ? !due : quickFilters.due === 'overdue' ? Boolean(due && due < today) : quickFilters.due === 'today' ? Boolean(due && due.getTime() === today.getTime()) : Boolean(due && due >= today && due <= weekEnd)); return `${card.title} ${card.description}`.toLowerCase().includes(query.toLowerCase()) && (filter === 'all' || card.priority === filter) && (quickFilters.assigneeId === 'all' || (quickFilters.assigneeId === 'unassigned' ? card.assigneeIds.length === 0 : card.assigneeIds.includes(quickFilters.assigneeId))) && (quickFilters.labelId === 'all' || card.labelIds.includes(quickFilters.labelId)) && dueMatches; }); }, [board.cards, filter, quickFilters, query]);
   const saveCard = (card: Card) => { dispatch({ type: cardEditor?.isNew ? 'createCard' : 'updateCard', card }); setCardEditor(null); notify(cardEditor?.isNew ? 'Card criado' : 'Card atualizado'); };
   const capture = (title: string) => { if (!title.trim()) return; dispatch({ type: 'captureInbox', item: { id: crypto.randomUUID(), title: title.trim(), description: '', createdAt: new Date().toISOString() } }); notify('Guardado na Inbox'); };
   const updateInbox = (item: { id: string; title: string; description: string; createdAt?: string }) => { dispatch({ type: 'updateInbox', item: { ...item, createdAt: item.createdAt ?? new Date().toISOString() } }); notify('Ideia atualizada'); };
