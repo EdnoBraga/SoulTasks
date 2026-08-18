@@ -59,6 +59,12 @@ export async function inviteWorkspaceMember(email: string, displayName: string, 
   const config = resolveConfig(configured);
   if (!email.trim() || !displayName.trim()) throw new Error('Informe nome e e-mail do membro.');
   const response = await fetcher(`${config.url}/functions/v1/invite-workspace-member`, { method: 'POST', headers: { ...requestHeaders(session), apikey: config.key }, body: JSON.stringify({ email: email.trim().toLowerCase(), displayName: displayName.trim() }) });
-  if (!response.ok) throw new Error(response.status === 403 ? 'Somente o administrador pode convidar membros.' : `Falha ao enviar convite (${response.status}).`);
+  if (!response.ok) {
+    let detail = '';
+    try { const body = await response.json() as { error?: string; message?: string }; detail = body.error || body.message || ''; } catch { /* resposta sem JSON */ }
+    if (response.status === 403) throw new Error(detail || 'Somente o administrador pode convidar membros.');
+    if (response.status === 404) throw new Error('O serviço de convites ainda não está publicado no Supabase.');
+    throw new Error(detail || `Falha ao enviar convite (${response.status}).`);
+  }
   return { invited: true };
 }

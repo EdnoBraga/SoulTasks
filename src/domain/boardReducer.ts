@@ -48,6 +48,8 @@ export function boardReducer(state: BoardState, action: BoardAction): BoardState
       return { ...state, boards: { ...state.boards, [board.id]: { ...board, cards: { ...cards, [copy.id]: copy } } } };
     }
     case 'captureInbox': return { ...state, inbox: [action.item, ...state.inbox] };
+    case 'updateInbox': return { ...state, inbox: state.inbox.map((item) => item.id === action.item.id ? action.item : item) };
+    case 'deleteInbox': return { ...state, inbox: state.inbox.filter((item) => item.id !== action.itemId) };
     case 'promoteInbox': {
       const item = state.inbox.find((entry) => entry.id === action.itemId);
       if (!item) return state;

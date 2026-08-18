@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BOARD_ZOOM_LEVELS, normalizeBoardZoom, type BoardZoom } from '../domain/boardZoom';
+import { BOARD_ZOOM_MAX, BOARD_ZOOM_MIN, normalizeBoardZoom, type BoardZoom } from '../domain/boardZoom';
 
 export default function BoardNavigation() {
   const [zoom, setZoom] = useState<BoardZoom>(() => normalizeBoardZoom(localStorage.getItem('soultasks-board-zoom')));
@@ -19,5 +19,5 @@ export default function BoardNavigation() {
     return () => { canvas.removeEventListener('wheel', shiftScroll); canvas.removeEventListener('pointerdown', pointerDown); canvas.removeEventListener('pointermove', pointerMove); canvas.removeEventListener('pointerup', pointerUp); canvas.removeEventListener('pointercancel', pointerUp); };
   }, [zoom]);
 
-  return <div className="board-navigation" aria-label="Navegação do quadro"><span>Quadro</span><div className="zoom-picker">{BOARD_ZOOM_LEVELS.map((level) => <button key={level} className={zoom === level ? 'active' : ''} onClick={() => setZoom(level)} aria-label={`Zoom ${level}%`}>{level}%</button>)}</div><small>Shift + rolagem para mover</small></div>;
+  return <div className="board-navigation" aria-label="Navegação e zoom do quadro"><span>Zoom</span><input type="range" min={BOARD_ZOOM_MIN} max={BOARD_ZOOM_MAX} step="1" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} aria-label="Ajustar zoom do quadro" /><output>{zoom}%</output><small>Shift + rolagem para mover</small></div>;
 }
