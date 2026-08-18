@@ -52,11 +52,11 @@
 
 :root[data-theme='light'] {
   color-scheme: light;
-  --sf-color-bg: #f3f6fc;
+  --sf-color-bg: #f8faff;
   --sf-color-surface: #ffffff;
-  --sf-color-surface-2: #e9eef8;
-  --sf-color-border: rgba(58, 76, 116, 0.18);
-  --sf-color-border-strong: rgba(58, 76, 116, 0.34);
+  --sf-color-surface-2: #eef3fb;
+  --sf-color-border: rgba(58, 76, 116, 0.14);
+  --sf-color-border-strong: rgba(58, 76, 116, 0.26);
   --sf-color-text: #17213d;
   --sf-color-text-muted: #52618b;
   --sf-color-text-soft: rgba(23, 33, 61, 0.72);
