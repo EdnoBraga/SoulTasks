@@ -1,0 +1,10 @@
+.drop-hint {
+  margin: 0 0 10px;
+  padding: 9px;
+  border: 1px dashed #63d9ff;
+  border-radius: 9px;
+  background: rgba(99, 217, 255, .13);
+  color: #1d6891;
+  font: 700 .67rem var(--sf-font-mono);
+  text-align: center;
+}
