@@ -4,6 +4,8 @@ export type Label = { id: string; name: string; color: string };
 
 export type ChecklistItem = { id: string; text: string; done: boolean };
 
+export type CardHistoryEntry = { id: string; author: string; summary: string; createdAt: string };
+
 export type Card = {
   id: string;
   columnId: string;
@@ -16,6 +18,7 @@ export type Card = {
   checklist: ChecklistItem[];
   comments: string[];
   createdAt: string;
+  history?: CardHistoryEntry[];
 };
 
 export type Column = {
@@ -53,7 +56,7 @@ export type BoardAction =
   | { type: 'createCard'; card: Card }
   | { type: 'updateCard'; card: Card }
   | { type: 'deleteCard'; cardId: string }
-  | { type: 'moveCard'; cardId: string; columnId: string }
+  | { type: 'moveCard'; cardId: string; columnId: string; actor?: string }
   | { type: 'createColumn'; column: Column }
   | { type: 'updateColumn'; column: Column }
   | { type: 'deleteColumn'; columnId: string }

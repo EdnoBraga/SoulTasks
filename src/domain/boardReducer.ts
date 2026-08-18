@@ -20,7 +20,8 @@ export function boardReducer(state: BoardState, action: BoardAction): BoardState
     case 'moveCard': {
       const card = cards[action.cardId];
       if (!card) return state;
-      return { ...state, boards: { ...state.boards, [board.id]: { ...board, cards: { ...cards, [action.cardId]: { ...card, columnId: action.columnId } } } } };
+      const history = action.actor && card.columnId !== action.columnId ? [...(card.history ?? []), { id: crypto.randomUUID(), author: action.actor, summary: 'moveu o card de coluna', createdAt: new Date().toISOString() }] : card.history;
+      return { ...state, boards: { ...state.boards, [board.id]: { ...board, cards: { ...cards, [action.cardId]: { ...card, columnId: action.columnId, history } } } } };
     }
     case 'createColumn':
       return { ...state, boards: { ...state.boards, [board.id]: { ...board, columnIds: [...board.columnIds, action.column.id], columns: { ...columns, [action.column.id]: action.column } } } };
