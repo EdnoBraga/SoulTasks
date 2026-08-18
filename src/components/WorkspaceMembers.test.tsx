@@ -4,10 +4,10 @@ import WorkspaceMembers from './WorkspaceMembers';
 
 describe('WorkspaceMembers', () => {
   it('shows member names and online state', () => {
-    render(<WorkspaceMembers members={[{ id: '1', userId: 'u1', workspaceId: 'w', role: 'admin', permission: 'admin', displayName: 'Braga', status: 'active' }]} presence={{ u1: 'online' }} isAdmin onInvite={async () => undefined} onUpdatePermission={async () => undefined} />);
+    render(<WorkspaceMembers members={[{ id: '1', userId: 'u1', workspaceId: 'w', role: 'admin', permission: 'admin', displayName: 'Braga', status: 'active' }]} presence={{ u1: 'online' }} isAdmin onInvite={async () => undefined} />);
     expect(screen.getByText('Braga')).toBeTruthy();
     expect(screen.getByText('online')).toBeTruthy();
     expect(screen.getByRole('button', { name: /convidar membro/i })).toBeTruthy();
-    expect(screen.getByRole('combobox', { name: /permissão de Braga/i })).toBeTruthy();
+    expect(screen.queryByRole('combobox', { name: /permissão de Braga/i })).toBeNull();
   });
 });
