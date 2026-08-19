@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import App from './App';
 
@@ -15,5 +15,12 @@ describe('layout do workspace', () => {
 
     expect(boardArea).toBeTruthy();
     expect(boardArea?.contains(templatePanel)).toBe(true);
+  });
+
+  it('expande as visões pessoais para toda a área principal', () => {
+    const { container } = render(<App />);
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Navegação principal' })).getByRole('button', { name: 'Minhas tarefas' }));
+    expect(container.querySelector('.board-area.full-view-area')).toBeTruthy();
+    expect(container.querySelector('.full-view-area > .my-tasks-view')).toBeTruthy();
   });
 });
