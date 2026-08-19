@@ -1,3 +1,5 @@
+export type Assignee = { id: string; name: string };
+
 export const SOULFORK_ASSIGNEES = [
   { id: 'braga', name: 'Braga' },
   { id: 'pallus', name: 'Pallus' },

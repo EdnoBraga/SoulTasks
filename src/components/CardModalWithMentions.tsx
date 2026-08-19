@@ -3,9 +3,10 @@ import { useState } from 'react';
 import CardModal from './CardModal';
 import { mentionSuggestions } from '../domain/mentions';
 import { getWorkspaceDriveUrl } from '../integrations/googleDrive';
+import type { Assignee } from '../domain/assignees';
 import type { Card, CardTemplate, CardTemplateRecurrence, Column, Label } from '../domain/types';
 
-type Props = { card: Card; columns: Column[]; labels: Label[]; templates: CardTemplate[]; onApplyTemplate: (template: CardTemplate) => void; onSaveTemplate: (card: Card, name: string, recurrence: CardTemplateRecurrence) => void; onClose: () => void; onSave: (card: Card) => void; onDelete: () => void; onDuplicate: () => void };
+type Props = { card: Card; columns: Column[]; labels: Label[]; templates: CardTemplate[]; assignees?: readonly Assignee[]; onApplyTemplate: (template: CardTemplate) => void; onSaveTemplate: (card: Card, name: string, recurrence: CardTemplateRecurrence) => void; onClose: () => void; onSave: (card: Card) => void; onDelete: () => void; onDuplicate: () => void };
 
 export default function CardModalWithMentions(props: Props) {
   const [text, setText] = useState('');
