@@ -30,6 +30,24 @@ export async function updateMemberPermission(memberId: string, permission: NonNu
   if (!response.ok) throw new Error(`Falha ao atualizar permissão (${response.status}).`);
 }
 
+export async function deleteWorkspaceMember(memberId: string, session: SupabaseSession, fetcher: Fetcher = fetch, configured?: SupabaseConfig) {
+  const config = resolveConfig(configured);
+  if (!memberId.trim()) throw new Error('Membro inválido.');
+  let response: Response;
+  try {
+    response = await fetcher(`${config.url}/functions/v1/delete-workspace-member`, { method: 'POST', headers: { ...requestHeaders(session), apikey: config.key }, body: JSON.stringify({ memberId: memberId.trim() }) });
+  } catch {
+    throw new Error('Não foi possível conectar ao serviço de exclusão de usuários. Verifique se a função está publicada no Supabase.');
+  }
+  if (!response.ok) {
+    let detail = '';
+    try { const body = await response.json() as { error?: string; message?: string }; detail = body.error || body.message || ''; } catch { /* resposta sem JSON */ }
+    if (response.status === 403) throw new Error(detail || 'Somente o administrador pode excluir usuários.');
+    if (response.status === 404) throw new Error('O serviço de exclusão ainda não está publicado no Supabase.');
+    throw new Error(detail || `Falha ao excluir usuário (${response.status}).`);
+  }
+}
+
 export async function recordPresenceSession(sessionId: string, workspaceId: string, startedAt: string, endedAt: string | null, session: SupabaseSession, fetcher: Fetcher = fetch, configured?: SupabaseConfig) {
   const config = resolveConfig(configured);
   const response = await fetcher(`${config.url}/rest/v1/presence_sessions`, { method: 'POST', headers: { ...requestHeaders(session), apikey: config.key, Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify({ id: sessionId, workspace_id: workspaceId, user_id: session.user.id, started_at: startedAt, last_seen_at: new Date().toISOString(), ended_at: endedAt }) });

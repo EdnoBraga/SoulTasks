@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { inviteWorkspaceMember, listChannels, listMessages, listPresenceSessions, listWorkspaceMembers, recordPresenceSession, sendMessage, updateMemberPermission } from './collaborationApi';
+import { deleteWorkspaceMember, inviteWorkspaceMember, listChannels, listMessages, listPresenceSessions, listWorkspaceMembers, recordPresenceSession, sendMessage, updateMemberPermission } from './collaborationApi';
 import type { SupabaseSession } from '../storage/supabaseStateAdapter';
 
 const session: SupabaseSession = { access_token: 'token', user: { id: 'user-1' } };
@@ -65,6 +65,15 @@ describe('collaboration API', () => {
     const fetcher = async (_input: RequestInfo | URL, init?: RequestInit) => { body = String(init?.body); return new Response('{}', { status: 200 }); };
     await expect(updateMemberPermission('member-2', 'commenter', session, fetcher as typeof fetch, config)).resolves.toBeUndefined();
     expect(body).toBe('{"permission":"commenter"}');
+  });
+
+  it('requests administrator deletion of a workspace member', async () => {
+    let body = '';
+    let url = '';
+    const fetcher = async (input: RequestInfo | URL, init?: RequestInit) => { url = String(input); body = String(init?.body); return new Response('{}', { status: 200 }); };
+    await expect(deleteWorkspaceMember('member-2', session, fetcher as typeof fetch, config)).resolves.toBeUndefined();
+    expect(url).toContain('/functions/v1/delete-workspace-member');
+    expect(JSON.parse(body)).toEqual({ memberId: 'member-2' });
   });
 
   it('records and lists presence sessions', async () => {
