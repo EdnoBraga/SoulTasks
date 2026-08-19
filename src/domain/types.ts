@@ -74,6 +74,7 @@ export type BoardAction =
   | { type: 'switchBoard'; boardId: string }
   | { type: 'createCard'; card: Card }
   | { type: 'updateCard'; card: Card }
+  | { type: 'removeAssignee'; assigneeId: string }
   | { type: 'deleteCard'; cardId: string }
   | { type: 'moveCard'; cardId: string; columnId: string; actor?: string }
   | { type: 'createColumn'; column: Column }

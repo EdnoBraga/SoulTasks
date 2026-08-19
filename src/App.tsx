@@ -21,6 +21,7 @@ import ActivityTimeline from './components/ActivityTimeline';
 import { loadUserProfile, saveUserProfile, type UserProfile } from './profile/profile';
 import { buildGeneralBoard, ensureWorkflowBoards } from './domain/workflows';
 import { getAssigneeColors, SOULFORK_ASSIGNEES, toggleAssignee } from './domain/assignees';
+import { removeAssigneeFromState } from './domain/assigneeCleanup';
 import { buildNotifications } from './domain/notifications';
 import { notifyWorkspaceByEmail, recipientEmailsForAssignees } from './collaboration/emailNotifications';
 import { getCardAttention } from './domain/cardAttention';
@@ -73,7 +74,7 @@ export default function App() {
   const board = state.activeBoardId === 'main' ? buildGeneralBoard(state) : state.boards[state.activeBoardId]!;
   const notify = (message: string) => { setToast(message); window.setTimeout(() => setToast(''), 2200); };
   const updateMemberPermissionForApp = async (memberId: string, permission: import('./collaboration/types').MemberPermission) => { try { await updateMemberPermission(memberId, permission, session!, fetch, getSupabaseConfig() ?? undefined); setMembers((current) => current.map((member) => member.id === memberId ? { ...member, permission } : member)); notify('Permissão atualizada'); } catch (error: unknown) { notify(error instanceof Error ? error.message : 'Falha ao atualizar permissão.'); } };
-  const deleteMemberForApp = async (memberId: string) => { try { await deleteWorkspaceMember(memberId, session!, fetch, getSupabaseConfig() ?? undefined); setMembers((current) => current.filter((member) => member.id !== memberId)); notify('Usuário excluído do workspace.'); } catch (error: unknown) { notify(error instanceof Error ? error.message : 'Falha ao excluir usuário.'); } };
+  const deleteMemberForApp = async (memberId: string) => { try { const member = members.find((item) => item.id === memberId); await deleteWorkspaceMember(memberId, session!, fetch, getSupabaseConfig() ?? undefined); const assignee = SOULFORK_ASSIGNEES.find((item) => item.name.toLowerCase() === member?.displayName.trim().toLowerCase()); if (assignee) dispatch({ type: 'removeAssignee', assigneeId: assignee.id }); setMembers((current) => current.filter((item) => item.id !== memberId)); notify('Usuário excluído do workspace e removido dos cards.'); } catch (error: unknown) { notify(error instanceof Error ? error.message : 'Falha ao excluir usuário.'); } };
   const exportCsv = () => { const blob = new Blob([buildTasksCsv(Object.values(state.boards))], { type: 'text/csv;charset=utf-8' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `soultasks-${new Date().toISOString().slice(0, 10)}.csv`; link.click(); URL.revokeObjectURL(url); notify('CSV exportado'); };
   const exportPdf = () => { const printWindow = window.open('', '_blank', 'noopener,noreferrer'); if (!printWindow) { notify('Permita pop-ups para imprimir o PDF'); return; } printWindow.document.write(buildPrintableTasksHtml(Object.values(state.boards))); printWindow.document.close(); printWindow.focus(); printWindow.print(); };
   useEffect(() => saveState(state), [state]);
@@ -103,7 +104,11 @@ export default function App() {
     const adapter = createSupabaseStateAdapter(session, SOULFORK_WORKSPACE_ID, fetch, config);
     void adapter.load().then((remoteState) => {
       if (cancelled) return;
-      if (remoteState) dispatch({ type: 'replaceState', state: remoteState });
+      if (remoteState) {
+        const activeAssigneeIds = new Set(members.map((member) => SOULFORK_ASSIGNEES.find((item) => item.name.toLowerCase() === member.displayName.trim().toLowerCase())?.id).filter(Boolean));
+        const cleanedState = SOULFORK_ASSIGNEES.filter((assignee) => !activeAssigneeIds.has(assignee.id)).reduce((current, assignee) => removeAssigneeFromState(current, assignee.id), remoteState);
+        dispatch({ type: 'replaceState', state: cleanedState });
+      }
       else void adapter.save(state).catch((error: unknown) => setSyncError(error instanceof Error ? error.message : 'Falha ao criar o quadro remoto.'));
     }).catch((error: unknown) => { if (!cancelled) setSyncError(error instanceof Error ? error.message : 'Falha ao carregar o quadro remoto.'); }).finally(() => { if (!cancelled) setRemoteReady(true); });
     return () => { cancelled = true; };
