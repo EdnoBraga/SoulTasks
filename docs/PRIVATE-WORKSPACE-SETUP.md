@@ -8,7 +8,7 @@
    `admin` e status `active`.
 3. Desative o cadastro público em Auth > Providers > Email.
 4. Configure o redirect do convite para `https://tasks.soulfork.com.br`.
-5. Configure SMTP com o remetente `faleconosco@soulfork.com.br`.
+5. Configure SMTP com o remetente `no-reply@example.com`.
 
 ## Edge Function
 

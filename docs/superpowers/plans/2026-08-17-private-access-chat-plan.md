@@ -17,7 +17,7 @@
 - Never expose the Supabase service-role key in the browser, GitHub, or source files.
 - Use RLS on every exposed collaboration table.
 - Authorization must not use editable `user_metadata`.
-- Invitation sender: `faleconosco@soulfork.com.br`.
+- Invitation sender: `no-reply@example.com`.
 - Preserve the existing deployment workflow and the original `soulfork.com.br` site.
 - Card assignees are the fixed internal members `Braga`, `Pallus`, and `Kayo`, with multi-select.
 - Voice transcription is shown live while the user speaks, finalized on stop, and audio is never persisted.
@@ -155,7 +155,7 @@ Use the server-only Admin Auth client to invite the user with redirect URL `http
 
 - [ ] **Step 4: Deploy and configure the function**
 
-Set the service-role key and redirect URL as Supabase function secrets. Configure SMTP sender `faleconosco@soulfork.com.br` and the allowed redirect URL in Supabase Auth settings. Do not put SMTP credentials in GitHub Actions.
+Set the service-role key and redirect URL as Supabase function secrets. Configure SMTP sender `no-reply@example.com` and the allowed redirect URL in Supabase Auth settings. Do not put SMTP credentials in GitHub Actions.
 
 - [ ] **Step 5: Run tests and verify a real invitation**
 

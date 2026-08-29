@@ -37,7 +37,7 @@ Deno.serve(async (request) => {
 
     const resendKey = Deno.env.get('RESEND_API_KEY');
     if (!resendKey) return json({ error: 'RESEND_API_KEY ainda não foi configurada no Supabase.' }, 503);
-    const from = Deno.env.get('EMAIL_FROM') ?? 'faleconosco@soulfork.com.br';
+    const from = Deno.env.get('EMAIL_FROM') ?? 'no-reply@example.com';
     const response = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from, to: allowedRecipients, subject: `[SoulTasks] ${title}`, html: `<div style="font-family:Arial,sans-serif;line-height:1.5"><h2>${escapeHtml(title)}</h2><p>${escapeHtml(message)}</p><p><strong>Tarefa:</strong> ${escapeHtml(cardTitle)}</p><p><a href="${escapeHtml(Deno.env.get('APP_URL') ?? 'https://tasks.soulfork.com.br')}">Abrir SoulTasks</a></p></div>` }) });
     if (!response.ok) return json({ error: `O provedor de e-mail recusou o envio (${response.status}).` }, 502);
     return json({ sent: allowedRecipients.length });

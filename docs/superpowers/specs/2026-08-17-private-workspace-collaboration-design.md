@@ -7,7 +7,7 @@ um administrador e dois membros da empresa. Todos os membros autorizados
 visualizam o mesmo quadro, cards, atividade, calendário e colaboração. Não
 haverá cadastro público nem acesso para clientes externos.
 
-O remetente dos convites será `faleconosco@soulfork.com.br`.
+O remetente dos convites será `no-reply@example.com`.
 
 ## Escopo aprovado
 
@@ -191,7 +191,7 @@ serão componentes do dashboard, não páginas externas.
 Antes da publicação da Etapa 1, será necessário configurar no Supabase:
 
 - URL de redirecionamento do convite para `https://tasks.soulfork.com.br`;
-- SMTP com o remetente `faleconosco@soulfork.com.br`;
+- SMTP com o remetente `no-reply@example.com`;
 - segredo da Edge Function para o envio administrativo;
 - administrador inicial do workspace.
 
